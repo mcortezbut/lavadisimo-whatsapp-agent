@@ -19,13 +19,17 @@ export async function initializeAgent() {
 
   const executor = await initializeAgentExecutorWithOptions(tools, model, {
     agentType: "structured-chat-zero-shot-react-description",
-    verbose: false, // 👈 Desactiva logs internos
+    verbose: false,
+    maxIterations: 15, // 👈 Aumentamos el límite de iteraciones (default: 10)
+    returnIntermediateSteps: false,
+    handleParsingErrors: true, // 👈 Manejo mejorado de errores
     agentArgs: {
       prefix: `Eres el asistente de Lavadísimo. Reglas estrictas:
 1. Responde SOLO en español chileno
 2. Usa CLP (ej: $15.000) 
 3. Sé breve y profesional
-4. Si no sabes el precio, di "Consultaré con el equipo y te aviso"`
+4. Si no sabes el precio, di "Consultaré con el equipo y te aviso"
+5. Si no entiendes algo, pide clarificación`
     }
   });
 
