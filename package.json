@@ -2,7 +2,7 @@
   "name": "lavanderia-agent",
   "type": "module",
   "dependencies": {
-    "langchain": "0.0.186",
+    "langchain": "0.0.210",
     "express": "^4.18.2",
     "twilio": "^4.23.0",
     "typeorm": "^0.3.25",
