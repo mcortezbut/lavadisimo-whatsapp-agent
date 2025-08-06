@@ -1,8 +1,9 @@
 import { z } from "zod";
 import { DataSource } from "typeorm";
-import "reflect-metadata"; 
+import "reflect-metadata";
+import levenshtein from "fast-levenshtein"; // Librería para distancia de edición
 
-// Configuración de conexión a tu BD (usa tus variables de entorno)
+// Configuración de conexión (igual que antes)
 const datasource = new DataSource({
   type: "mssql",
   host: process.env.DB_HOST,
@@ -12,35 +13,83 @@ const datasource = new DataSource({
   database: process.env.DB_NAME,
   options: { 
     encrypt: false,
-    trustServerCertificate: true  // Necesario para conexiones no encriptadas
+    trustServerCertificate: true
   },
   extra: {
-    driver: "tedious"  // Usa el driver alternativo
+    driver: "tedious"
   }
 });
 
+// Función de similitud mejorada
+const textSimilarity = (a: string, b: string) => {
+  const str1 = a.toLowerCase().replace(/\s+/g, '');
+  const str2 = b.toLowerCase().replace(/\s+/g, '');
+  const distance = levenshtein.get(str1, str2);
+  const maxLength = Math.max(str1.length, str2.length);
+  return 1 - distance / maxLength;
+};
+
 export default {
   name: "consultar_precio",
-  description: "Consulta precios de servicios en la base de datos",
+  description: "Consulta precios de servicios en la base de datos con tolerancia a errores",
   schema: z.object({
     producto: z.string().describe("Nombre del producto/servicio ej: 'poltrona grande'")
   }),
   func: async ({ producto }) => {
     await datasource.initialize();
-    const query = `
-      SELECT NOMPROD, PRECIO 
-      FROM PRODUCTOS 
-      WHERE NOMPROD LIKE '%${producto}%'
-    `;
-    const result = await datasource.query(query);
+    
+    // 1. Primero obtenemos TODOS los productos
+    const allProducts = await datasource.query(`
+      SELECT P.NOMPROD, P.PRECIO
+      FROM lavadisimo.lavadisimo.PRODUCTOS P
+      INNER JOIN (
+        SELECT IDPROD, MAX(FECHAUPDATE) AS maxdate
+        FROM lavadisimo.lavadisimo.PRODUCTOS
+        WHERE IDUSUARIO = 'lavadisimo'
+        GROUP BY IDPROD
+      ) PT ON P.IDPROD = PT.IDPROD AND P.FECHAUPDATE = PT.maxdate
+      WHERE P.IDUSUARIO = 'lavadisimo'
+    `);
+    
     datasource.destroy();
 
-    if (result.length === 0) {
-      return `No encontré precios para "${producto}"`;
+    if (allProducts.length === 0) {
+      return "No hay productos disponibles en la base de datos";
     }
 
-    return result.map(item => 
-      `• ${item.NOMPROD}: $${item.PRECIO}`
-    ).join('\n');
+    // 2. Búsqueda inteligente con múltiples estrategias
+    const results = allProducts
+      .map(item => ({
+        ...item,
+        similarity: Math.max(
+          textSimilarity(item.NOMPROD, producto), // Similitud general
+          item.NOMPROD.toLowerCase().includes(producto.toLowerCase()) ? 0.8 : 0 // Coincidencia parcial
+        )
+      }))
+      .filter(item => item.similarity > 0.4) // Umbral de similitud
+      .sort((a, b) => b.similarity - a.similarity);
+
+    // 3. Manejo de resultados
+    if (results.length === 0) {
+      // Sugerencia basada en el producto más similar
+      const closestMatch = allProducts.reduce((prev, curr) => 
+        textSimilarity(curr.NOMPROD, producto) > textSimilarity(prev.NOMPROD, producto) ? curr : prev
+      );
+      
+      return `No encontré "${producto}". ¿Quizás te refieres a "${closestMatch.NOMPROD}"?`;
+    }
+
+    // 4. Formatear resultados
+    const exactMatch = results.find(r => r.similarity > 0.9);
+    if (exactMatch) {
+      return `• ${exactMatch.NOMPROD}: $${exactMatch.PRECIO}`;
+    }
+
+    return [
+      `¿Uno de estos? (escribe exactamente el nombre para confirmar):`,
+      ...results.slice(0, 3).map(item => 
+        `• ${item.NOMPROD}: $${item.PRECIO} (similitud: ${Math.round(item.similarity * 100)}%)`
+      )
+    ].join('\n');
   }
 };
