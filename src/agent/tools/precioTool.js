@@ -3,7 +3,6 @@ import { DataSource } from "typeorm";
 import "reflect-metadata";
 import levenshtein from "fast-levenshtein";
 
-// Configuración de conexión
 const datasource = new DataSource({
   type: "mssql",
   host: process.env.DB_HOST,
@@ -20,7 +19,6 @@ const datasource = new DataSource({
   }
 });
 
-// Función de similitud (sin anotaciones TypeScript)
 const textSimilarity = (a, b) => {
   const str1 = a.toLowerCase().replace(/\s+/g, '');
   const str2 = b.toLowerCase().replace(/\s+/g, '');
@@ -38,7 +36,6 @@ export default {
   func: async ({ producto }) => {
     await datasource.initialize();
     
-    // Consulta SQL corregida
     const allProducts = await datasource.query(`
       SELECT P.NOMPROD, P.PRECIO
       FROM lavadisimo.lavadisimo.PRODUCTOS P
@@ -57,7 +54,7 @@ export default {
       return "No hay productos disponibles en la base de datos";
     }
 
-    // Búsqueda difusa
+    // CORRECCIÓN PRINCIPAL: Paréntesis bien cerrados en la cadena de métodos
     const results = allProducts
       .map(item => ({
         ...item,
@@ -65,7 +62,7 @@ export default {
           textSimilarity(item.NOMPROD, producto),
           item.NOMPROD.toLowerCase().includes(producto.toLowerCase()) ? 0.8 : 0
         )
-      })
+      })) // <-- Este paréntesis estaba faltando
       .filter(item => item.similarity > 0.4)
       .sort((a, b) => b.similarity - a.similarity);
 
