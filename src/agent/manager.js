@@ -20,7 +20,7 @@ export async function initializeAgent() {
   const executor = await initializeAgentExecutorWithOptions(tools, model, {
     agentType: "structured-chat-zero-shot-react-description",
     verbose: false,
-    maxIterations: 15, // 👈 Aumentamos el límite de iteraciones (default: 10)
+    maxIterations: 30, // 👈 Aumentamos el límite de iteraciones (default: 10)
     returnIntermediateSteps: false,
     handleParsingErrors: true, // 👈 Manejo mejorado de errores
     agentArgs: {
