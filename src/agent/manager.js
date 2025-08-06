@@ -1,4 +1,4 @@
-import { initializeAgentExecutorWithOptions } from "langchain/dist/agents";
+import { initializeAgentExecutorWithOptions } from "langchain/agents";
 import { ChatOpenAI } from "langchain/chat_models/openai";
 import { precioTool, estadoTool } from "./tools/index.js";
 
