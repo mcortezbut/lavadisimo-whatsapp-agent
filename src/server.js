@@ -43,7 +43,7 @@ app.post('/webhook', async (req, res) => {
     
     const agentResponse = await lavanderiaAgent.invoke({
       input: Body,
-      telefono: From.replace('whatsapp:', '') // Limpia el prefijo
+      telefono: From.replace('whatsapp:+56', '') // Limpia el prefijo
     });
 
     console.log('🛠️ Respuesta del Agent:', agentResponse.output);
