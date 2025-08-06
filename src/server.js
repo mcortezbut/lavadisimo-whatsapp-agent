@@ -2,38 +2,29 @@ import express from 'express';
 import twilio from 'twilio';
 const { Twilio } = twilio;
 import { initializeAgent } from './agent/manager.js';
-import { ConsoleCallbackHandler } from "langchain/callbacks";
+import { ConsoleCallbackHandler } from "@langchain/core/callbacks"; // Ruta actualizada
 
 const app = express();
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
-// Configuración Twilio
+// Configura Twilio
 const twilioClient = new Twilio(
   process.env.TWILIO_ACCOUNT_SID,
   process.env.TWILIO_AUTH_TOKEN
 );
 
-// Handler para logs mínimos
-const minimalHandler = new ConsoleCallbackHandler({
+// Configuración del handler de logs (antes de inicializar el Agent)
+const minimalConsoleHandler = new ConsoleCallbackHandler({
   alwaysVerbose: false,
-  verboseMethods: [],
-  ignoreLLM: true,       // 👈 Nuevo: Omite logs del modelo
-  ignoreChain: true,    // 👈 Nuevo: Omite procesos internos
-  ignoreAgent: true      // 👈 Nuevo: Omite pasos del Agent
+  verboseMethods: []
 });
 
-
-// -----------------------------------------------
-// ¡CORRECCIÓN CLAVE! (Elimina la duplicación)
-// -----------------------------------------------
+// Inicialización asíncrona
 let lavanderiaAgent;
-
 (async () => {
   try {
-    lavanderiaAgent = await initializeAgent({
-      callbacks: [minimalConsoleHandler] // Configuración única aquí
-    });
+    lavanderiaAgent = await initializeAgent();
     console.log('✅ Agent inicializado correctamente');
   } catch (error) {
     console.error('❌ Error inicializando Agent:', error);
@@ -43,7 +34,7 @@ let lavanderiaAgent;
 
 // Ruta de health check
 app.get('/', (req, res) => {
-  res.status(200).send('🛠️ Agent de Lavadísimo funcionando | Webhook: POST /webhook');
+  res.status(200).send('🛠️ Agent de Lavadísimo funcionando');
 });
 
 // Webhook de Twilio
@@ -55,17 +46,16 @@ app.post('/webhook', async (req, res) => {
   }
 
   try {
-    console.log(`📩 Mensaje recibido de ${From}: "${Body.substring(0, 50)}${Body.length > 50 ? '...' : ''}"`);
+    console.log(`📩 Mensaje de ${From}: ${Body.substring(0, 50)}...`);
     
     const agentResponse = await lavanderiaAgent.invoke({
       input: Body,
       telefono: From.replace('whatsapp:+56', '')
     }, {
-      callbacks: [minimalHandler],
-      metadata: { reduceVerbosity: true } // 👈 Nueva opción
+      callbacks: [minimalConsoleHandler]
     });
 
-    console.log(`📤 Respuesta a ${From}: "${agentResponse.output.substring(0, 50)}${agentResponse.output.length > 50 ? '...' : ''}"`);
+    console.log(`📤 Respuesta: ${agentResponse.output.substring(0, 50)}...`);
     
     await twilioClient.messages.create({
       body: agentResponse.output,
@@ -75,7 +65,7 @@ app.post('/webhook', async (req, res) => {
 
     res.status(200).send('<Response></Response>');
   } catch (error) {
-    console.error('❌ Error en webhook:', error.message); // Solo mensaje
+    console.error('❌ Error:', error.message);
     res.status(500).send('<Response><Message>Error procesando mensaje</Message></Response>');
   }
 });
