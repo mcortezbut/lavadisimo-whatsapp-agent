@@ -2,34 +2,33 @@ import { initializeAgentExecutorWithOptions } from "langchain/agents";
 import { ChatOpenAI } from "langchain/chat_models/openai";
 import { precioTool } from "./tools/index.js";
 
+const AGENT_CONFIG = {
+  agentType: "structured-chat-zero-shot-react-description",
+  verbose: false,
+  maxIterations: 6, // Estrictamente necesario
+  earlyStoppingMethod: "force",
+  handleParsingErrors: () => "Por favor pregunta sobre servicios de lavandería",
+  agentArgs: {
+    prefix: `Eres un asistente de Lavadísimo. Reglas absolutas:
+1. Usa SOLO la herramienta consultar_precio
+2. Si no hay resultados, di: "No ofrecemos ese servicio actualmente"
+3. Nunca inventes precios
+4. Máximo 1 producto por respuesta
+5. Formato: "[Producto]: $[Precio]"`
+  }
+};
+
 export async function initializeAgent() {
-  const tools = [precioTool];
-  
   const model = new ChatOpenAI({
     modelName: "gpt-3.5-turbo",
     temperature: 0,
-    maxRetries: 1,
-    timeout: 10000, // 10 segundos de timeout
+    maxTokens: 100,
+    timeout: 8000
   });
 
-  const executor = await initializeAgentExecutorWithOptions(tools, model, {
-    agentType: "structured-chat-zero-shot-react-description",
-    verbose: process.env.NODE_ENV === 'development',
-    maxIterations: 8, // Reducimos iteraciones pero con mejor control
-    earlyStoppingMethod: "force", // Fuerza finalización después de maxIterations
-    returnIntermediateSteps: false,
-    handleParsingErrors: (error) => {
-      return "Por favor reformula tu pregunta de manera más clara.";
-    },
-    agentArgs: {
-      prefix: `Eres el asistente de Lavadísimo. Reglas absolutas:
-1. Usa EXCLUSIVAMENTE la herramienta 'consultar_precio' para responder sobre precios
-2. Si no hay resultados, responde: "No tengo información sobre ese servicio. ¿Necesitas consultar otro?"
-3. Nunca inventes precios
-4. Respuestas MUY breves (1 línea)
-5. Formato: "[Producto]: $[Precio]" o mensaje de no encontrado`,
-    }
-  });
-
-  return executor;
+  return await initializeAgentExecutorWithOptions(
+    [precioTool],
+    model,
+    AGENT_CONFIG
+  );
 }
