@@ -1,4 +1,4 @@
-import { initializeAgentExecutorWithOptions } from "@langchain/agents"; // Usa la nueva ruta
+import { initializeAgentExecutorWithOptions } from "langchain/agents";
 import { ChatOpenAI } from "@langchain/openai";
 import { precioTool, estadoTool } from "./tools/index.js";
 
