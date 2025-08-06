@@ -2,7 +2,7 @@ import express from 'express';
 import twilio from 'twilio';
 const { Twilio } = twilio;
 import { initializeAgent } from './agent/manager.js';
-import { ConsoleCallbackHandler } from "langchain/callbacks";
+import { ConsoleCallbackHandler } from "langchain/core/callbacks";
 
 const app = express();
 app.use(express.urlencoded({ extended: true }));
@@ -15,10 +15,14 @@ const twilioClient = new Twilio(
 );
 
 // Handler para logs mínimos
-const minimalConsoleHandler = new ConsoleCallbackHandler({
+const minimalHandler = new ConsoleCallbackHandler({
   alwaysVerbose: false,
-  verboseMethods: []
+  verboseMethods: [],
+  ignoreLLM: true,       // 👈 Nuevo: Omite logs del modelo
+  ignoreChain: true,    // 👈 Nuevo: Omite procesos internos
+  ignoreAgent: true      // 👈 Nuevo: Omite pasos del Agent
 });
+
 
 // -----------------------------------------------
 // ¡CORRECCIÓN CLAVE! (Elimina la duplicación)
@@ -57,7 +61,8 @@ app.post('/webhook', async (req, res) => {
       input: Body,
       telefono: From.replace('whatsapp:+56', '')
     }, {
-      callbacks: [minimalConsoleHandler] // Aplica también en cada invoke
+      callbacks: [minimalHandler],
+      metadata: { reduceVerbosity: true } // 👈 Nueva opción
     });
 
     console.log(`📤 Respuesta a ${From}: "${agentResponse.output.substring(0, 50)}${agentResponse.output.length > 50 ? '...' : ''}"`);
