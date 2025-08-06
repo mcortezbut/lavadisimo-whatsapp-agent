@@ -1,21 +1,28 @@
 {
-  "name": "lavanderia-agent",
+  "name": "lavadisimo-agent",
   "type": "module",
   "dependencies": {
     "langchain": "0.0.210",
-    "express": "^4.18.2",
-    "twilio": "^4.23.0",
-    "typeorm": "^0.3.25",
-    "mssql": "^9.3.1",
-    "tedious": "^15.1.2",
-    "reflect-metadata": "^0.1.13",
-    "fast-levenshtein": "^3.0.0",
-    "zod": "^3.22.4"
+    "express": "4.18.2",
+    "twilio": "4.23.0",
+    "typeorm": "0.3.25",
+    "mssql": "9.3.1",
+    "tedious": "15.1.2",
+    "reflect-metadata": "0.1.13",
+    "zod": "3.22.4",
+    "fast-levenshtein": "3.0.0"
   },
   "scripts": {
-    "start": "node src/server.js"
+    "start": "node src/server.js",
+    "fix-deps": "rm -rf node_modules package-lock.json && npm install"
   },
   "engines": {
-    "node": "20.x"
+    "node": "20.19.4",
+    "npm": "10.x"
+  },
+  "overrides": {
+    "tedious": {
+      "mssql": "^9.3.1"
+    }
   }
 }
