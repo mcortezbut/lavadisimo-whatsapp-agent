@@ -2,7 +2,7 @@ import express from 'express';
 import twilio from 'twilio';
 const { Twilio } = twilio;
 import { initializeAgent } from './agent/manager.js';
-import { ConsoleCallbackHandler } from "@langchain/core/callbacks"; // Ruta actualizada
+import { ConsoleCallbackHandler } from "langchain/dist/callbacks/handler"; // Ruta específica
 
 const app = express();
 app.use(express.urlencoded({ extended: true }));
