@@ -11,42 +11,53 @@ const datasource = new DataSource({
   database: process.env.DB_NAME,
   options: { 
     encrypt: false,
-    trustServerCertificate: true
+    trustServerCertificate: true,
+    connectTimeout: 5000 // 5 segundos timeout
   },
   extra: {
-    driver: "tedious"
+    driver: "tedious",
+    options: {
+      requestTimeout: 5000 // 5 segundos por consulta
+    }
   }
 });
 
 export default {
   name: "consultar_precio",
-  description: "Consulta precios de servicios en la base de datos",
+  description: "Herramienta PARA PRECIOS EXACTOS. Devuelve productos que coincidan EXACTAMENTE.",
   schema: z.object({
-    producto: z.string().describe("Nombre del producto/servicio")
+    producto: z.string().min(3).describe("Nombre EXACTO del producto")
   }),
   func: async ({ producto }) => {
+    let connection;
     try {
-      await datasource.initialize();
+      connection = await datasource.initialize();
       
-      const results = await datasource.query(`
-        SELECT TOP 3 NOMPROD, PRECIO 
+      // Consulta optimizada con parámetros
+      const results = await connection.query(`
+        SELECT TOP 1 NOMPROD, PRECIO 
         FROM PRODUCTOS 
         WHERE NOMPROD LIKE '%' + @0 + '%'
-        ORDER BY NOMPROD
+        ORDER BY CASE 
+          WHEN NOMPROD = @0 THEN 0 
+          WHEN NOMPROD LIKE @0 + '%' THEN 1 
+          ELSE 2 
+        END
       `, [producto]);
 
-      if (results.length === 0) {
-        return "No encontré ese producto en nuestros registros";
+      if (!results.length) {
+        return "NO_ENCONTRADO";
       }
 
-      // Formatea la respuesta para el cliente final
-      return results.map(p => `${p.NOMPROD}: $${p.PRECIO}`).join('\n');
+      return `${results[0].NOMPROD}: $${results[0].PRECIO}`;
 
     } catch (error) {
       console.error("Error en precioTool:", error);
-      return "Ocurrió un error al consultar los precios";
+      return "ERROR_CONSULTA";
     } finally {
-      await datasource.destroy();
+      if (connection) {
+        await connection.destroy();
+      }
     }
   }
 };
