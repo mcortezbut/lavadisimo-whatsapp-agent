@@ -1,6 +1,7 @@
 import { initializeAgentExecutorWithOptions } from "langchain/agents";
 import { ChatOpenAI } from "langchain/chat_models/openai";
 import { precioTool, estadoTool } from "./tools/index.js";
+import { ConsoleCallbackHandler } from "langchain/callbacks";
 
 export async function initializeAgent() {
   const tools = [precioTool, estadoTool];
@@ -8,10 +9,12 @@ export async function initializeAgent() {
   const model = new ChatOpenAI({ 
     model: "gpt-3.5-turbo",
     temperature: 0,
+    maxRetries: 2, // 👈 Nuevo: reintentos para errores de API
+    maxConcurrency: 1, // 👈 Evita sobrecarga
     configuration: {
       baseOptions: {
         headers: {
-          "Accept-Language": "es-ES" // Fuerza respuestas en español
+          "Accept-Language": "es-ES"
         }
       }
     }
@@ -19,17 +22,28 @@ export async function initializeAgent() {
 
   const executor = await initializeAgentExecutorWithOptions(tools, model, {
     agentType: "structured-chat-zero-shot-react-description",
-    verbose: false,
-    maxIterations: 30, // 👈 Aumentamos el límite de iteraciones (default: 10)
+    verbose: process.env.NODE_ENV === 'development',
+    maxIterations: 10, // 👈 Mantenemos un valor razonable
     returnIntermediateSteps: false,
-    handleParsingErrors: true, // 👈 Manejo mejorado de errores
+    handleParsingErrors: (error) => { // 👈 Manejo personalizado
+      console.error("Error de parsing:", error);
+      return "Por favor reformula tu pregunta de manera más clara.";
+    },
+    earlyStoppingMethod: "generate", // 👈 Mejor control de parada
     agentArgs: {
       prefix: `Eres el asistente de Lavadísimo. Reglas estrictas:
-1. Responde SOLO en español chileno
-2. Usa CLP (ej: $15.000) 
-3. Sé breve y profesional
-4. Si no sabes el precio, di "Consultaré con el equipo y te aviso"
-5. Si no entiendes algo, pide clarificación`
+1. Usa EXCLUSIVAMENTE las herramientas proporcionadas
+2. Si no encuentras información, di "No tengo ese dato. ¿Deseas consultar otro servicio?"
+3. Nunca inventes precios
+4. Respuestas breves (máximo 2 líneas)
+5. Moneda CLP (ej: $15.000)`,
+      suffix: `¡Importante! Si la herramienta no devuelve resultados:
+- Pide confirmación o más detalles
+- Nunca inventes respuestas
+- Usa exactamente una de estas opciones:
+  • "No tengo ese dato registrado"
+  • "¿Te refieres a [producto similar]?"
+  • "Por favor describe mejor el servicio"`
     }
   });
 
