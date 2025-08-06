@@ -8,9 +8,10 @@
     "twilio": "^4.23.0",
     "zod": "^3.22.0",
     "typeorm": "^0.3.17",
-    "langchain": "0.1.0"  // ¡Importante! Paquete unificado
+    "langchain": "0.1.0",
+    "reflect-metadata": "^0.1.14"
   },
   "engines": {
-    "node": "20.x"  // Usa Node 20 (LTS estable)
+    "node": "20.x"
   }
 }
