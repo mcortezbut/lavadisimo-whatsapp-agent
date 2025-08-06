@@ -1,9 +1,10 @@
 import express from 'express';
-import { Twilio } from 'twilio';
+import twilio from 'twilio';
+const { Twilio } = twilio;
 import { initializeAgent } from './agent/manager.js';
 
 const app = express();
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
 
 const twilioClient = new Twilio(
   process.env.TWILIO_ACCOUNT_SID,
