@@ -4,6 +4,14 @@ const { Twilio } = twilio;
 import { initializeAgent } from './agent/manager.js';
 import { ConsoleCallbackHandler } from "langchain/callbacks";
 
+// Configuración SUPER reducida de logs
+const minimalHandler = new ConsoleCallbackHandler({
+  alwaysVerbose: false,  // ← Desactiva logs internos
+  ignoreLLM: true,       // ← Omite detalles del modelo AI
+  ignoreChain: true,     // ← Oculta pasos intermedios
+  ignoreAgent: true      // ← Elimina trazas del Agent
+});
+
 const app = express();
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
@@ -52,7 +60,7 @@ app.post('/webhook', async (req, res) => {
       input: Body,
       telefono: From.replace('whatsapp:+56', '')
     }, {
-      callbacks: [minimalConsoleHandler]
+      callbacks: [minimalHandler]
     });
 
     console.log(`📤 Respuesta: ${agentResponse.output.substring(0, 50)}...`);
