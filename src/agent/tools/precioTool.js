@@ -1,9 +1,9 @@
 import { z } from "zod";
 import { DataSource } from "typeorm";
 import "reflect-metadata";
-import levenshtein from "fast-levenshtein"; // Librería para distancia de edición
+import levenshtein from "fast-levenshtein";
 
-// Configuración de conexión (igual que antes)
+// Configuración de conexión
 const datasource = new DataSource({
   type: "mssql",
   host: process.env.DB_HOST,
@@ -20,8 +20,8 @@ const datasource = new DataSource({
   }
 });
 
-// Función de similitud mejorada
-const textSimilarity = (a: string, b: string) => {
+// Función de similitud (sin anotaciones TypeScript)
+const textSimilarity = (a, b) => {
   const str1 = a.toLowerCase().replace(/\s+/g, '');
   const str2 = b.toLowerCase().replace(/\s+/g, '');
   const distance = levenshtein.get(str1, str2);
@@ -38,7 +38,7 @@ export default {
   func: async ({ producto }) => {
     await datasource.initialize();
     
-    // 1. Primero obtenemos TODOS los productos
+    // Consulta SQL corregida
     const allProducts = await datasource.query(`
       SELECT P.NOMPROD, P.PRECIO
       FROM lavadisimo.lavadisimo.PRODUCTOS P
@@ -57,29 +57,25 @@ export default {
       return "No hay productos disponibles en la base de datos";
     }
 
-    // 2. Búsqueda inteligente con múltiples estrategias
+    // Búsqueda difusa
     const results = allProducts
       .map(item => ({
         ...item,
         similarity: Math.max(
-          textSimilarity(item.NOMPROD, producto), // Similitud general
-          item.NOMPROD.toLowerCase().includes(producto.toLowerCase()) ? 0.8 : 0 // Coincidencia parcial
+          textSimilarity(item.NOMPROD, producto),
+          item.NOMPROD.toLowerCase().includes(producto.toLowerCase()) ? 0.8 : 0
         )
-      }))
-      .filter(item => item.similarity > 0.4) // Umbral de similitud
+      })
+      .filter(item => item.similarity > 0.4)
       .sort((a, b) => b.similarity - a.similarity);
 
-    // 3. Manejo de resultados
     if (results.length === 0) {
-      // Sugerencia basada en el producto más similar
       const closestMatch = allProducts.reduce((prev, curr) => 
         textSimilarity(curr.NOMPROD, producto) > textSimilarity(prev.NOMPROD, producto) ? curr : prev
       );
-      
       return `No encontré "${producto}". ¿Quizás te refieres a "${closestMatch.NOMPROD}"?`;
     }
 
-    // 4. Formatear resultados
     const exactMatch = results.find(r => r.similarity > 0.9);
     if (exactMatch) {
       return `• ${exactMatch.NOMPROD}: $${exactMatch.PRECIO}`;
