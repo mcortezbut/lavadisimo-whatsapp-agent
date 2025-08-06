@@ -45,6 +45,19 @@ app.get('/', (req, res) => {
   res.status(200).send('🛠️ Agent de Lavadísimo funcionando');
 });
 
+// Agrega esto ANTES del endpoint /webhook
+const formatAgentResponse = (rawResponse) => {
+  if (typeof rawResponse === 'string') {
+    return rawResponse;
+  }
+  
+  if (rawResponse.output?.includes('Agent stopped')) {
+    return "No logré encontrar esa información. ¿Necesitas otro servicio?";
+  }
+
+  return "Por favor pregunta por servicios de lavandería específicos";
+};
+
 // Webhook de Twilio
 app.post('/webhook', async (req, res) => {
   const { Body, From } = req.body;
@@ -57,11 +70,13 @@ app.post('/webhook', async (req, res) => {
     console.log(`📩 Mensaje de ${From}: ${Body.substring(0, 50)}...`);
     
     const agentResponse = await lavanderiaAgent.invoke({
-      input: Body,
+      input: Body.trim().substring(0, 100), // Limita entrada
       telefono: From.replace('whatsapp:+56', '')
     }, {
       callbacks: [minimalHandler]
     });
+
+    const cleanResponse = formatAgentResponse(agentResponse);
 
     console.log(`📤 Respuesta: ${agentResponse.output.substring(0, 50)}...`);
     
