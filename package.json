@@ -1,6 +1,7 @@
 {
   "name": "lavadisimo-agent",
   "type": "module",
+  "version": "1.0.0",
   "dependencies": {
     "langchain": "0.0.210",
     "express": "4.18.2",
@@ -8,21 +9,20 @@
     "typeorm": "0.3.25",
     "mssql": "9.3.1",
     "tedious": "15.1.2",
-    "reflect-metadata": "0.1.13",
+    "reflect-metadata": "0.1.14",  // Versión compatible con typeorm
     "zod": "3.22.4",
     "fast-levenshtein": "3.0.0"
   },
   "scripts": {
     "start": "node src/server.js",
-    "fix-deps": "rm -rf node_modules package-lock.json && npm install"
+    "fix-deps": "rm -rf node_modules package-lock.json && npm install --legacy-peer-deps",
+    "prod": "NODE_ENV=production node src/server.js"
   },
   "engines": {
     "node": "20.19.4",
     "npm": "10.x"
   },
-  "overrides": {
-    "tedious": {
-      "mssql": "^9.3.1"
-    }
+  "resolutions": {
+    "reflect-metadata": "0.1.14"
   }
 }
