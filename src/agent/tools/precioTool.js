@@ -1,7 +1,6 @@
 import { z } from "zod";
 import { DataSource } from "typeorm";
 import "reflect-metadata";
-import levenshtein from "fast-levenshtein";
 
 const datasource = new DataSource({
   type: "mssql",
@@ -15,49 +14,37 @@ const datasource = new DataSource({
     trustServerCertificate: true
   },
   extra: {
-    driver: "tedious",
-    connectionTimeout: 30000
+    driver: "tedious"
   }
 });
 
-const textSimilarity = (a, b) => {
-  const str1 = a.toLowerCase().replace(/\s+/g, '');
-  const str2 = b.toLowerCase().replace(/\s+/g, '');
-  const distance = levenshtein.get(str1, str2);
-  const maxLength = Math.max(str1.length, str2.length);
-  return 1 - distance / maxLength;
-};
-
 export default {
   name: "consultar_precio",
-  description: "Consulta precios EXACTOS de servicios. No inventes información.",
+  description: "Consulta precios de servicios en la base de datos",
   schema: z.object({
-    producto: z.string().describe("Nombre EXACTO del producto según la base de datos")
+    producto: z.string().describe("Nombre del producto/servicio")
   }),
   func: async ({ producto }) => {
-    if (!producto || producto.length < 3) {
-      return "ERROR: Pide al cliente más detalles sobre el producto";
-    }
-
     try {
-      // ... (código de conexión igual)
+      await datasource.initialize();
       
       const results = await datasource.query(`
         SELECT TOP 3 NOMPROD, PRECIO 
         FROM PRODUCTOS 
-        WHERE NOMPROD LIKE @producto
+        WHERE NOMPROD LIKE '%' + @0 + '%'
         ORDER BY NOMPROD
-      `, [{ name: 'producto', value: `%${producto}%` }]);
+      `, [producto]);
 
-      if (!results.length) {
-        return "NO_ENCONTRADO"; // 👈 Mensaje específico
+      if (results.length === 0) {
+        return "No encontré ese producto en nuestros registros";
       }
 
+      // Formatea la respuesta para el cliente final
       return results.map(p => `${p.NOMPROD}: $${p.PRECIO}`).join('\n');
 
     } catch (error) {
       console.error("Error en precioTool:", error);
-      return "ERROR_TECNICO";
+      return "Ocurrió un error al consultar los precios";
     } finally {
       await datasource.destroy();
     }
