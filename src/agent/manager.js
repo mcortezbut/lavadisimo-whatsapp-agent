@@ -1,18 +1,18 @@
-import { createToolCallingAgent, AgentExecutor } from "langchain/agents";
+import { initializeAgentExecutorWithOptions } from "langchain/agents";
 import { ChatOpenAI } from "@langchain/openai";
-import { precioTool, estadoTool } from './tools/index.js';
+import { precioTool, estadoTool } from "./tools/index.js";
 
 export async function initializeAgent() {
   const tools = [precioTool, estadoTool];
-  
-  const agent = createToolCallingAgent({
-    llm: new ChatOpenAI({ 
-      model: "gpt-3.5-turbo",
-      temperature: 0 
-    }),
-    tools,
-    prompt: `Eres un asistente especializado en lavandería...` // Personaliza
+  const model = new ChatOpenAI({ 
+    model: "gpt-3.5-turbo",
+    temperature: 0
   });
 
-  return new AgentExecutor({ agent, tools });
+  const executor = await initializeAgentExecutorWithOptions(tools, model, {
+    agentType: "structured-chat-zero-shot-react-description",
+    verbose: true // Opcional para ver logs detallados
+  });
+
+  return executor;
 }
