@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { DataSource } from "typeorm";
+import "reflect-metadata"; 
 
 // Configuración de conexión a tu BD (usa tus variables de entorno)
 const datasource = new DataSource({
@@ -9,7 +10,13 @@ const datasource = new DataSource({
   username: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
-  options: { encrypt: false }
+  options: { 
+    encrypt: false,
+    trustServerCertificate: true  // Necesario para conexiones no encriptadas
+  },
+  extra: {
+    driver: "tedious"  // Usa el driver alternativo
+  }
 });
 
 export default {
