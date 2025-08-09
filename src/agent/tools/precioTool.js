@@ -1,6 +1,11 @@
 import { z } from "zod";
 import { DataSource } from "typeorm";
 
+// Primero define el schema Zod
+const paramsSchema = z.object({
+  producto: z.string().min(3, "Mínimo 3 caracteres")
+});
+
 const datasource = new DataSource({
   type: "mssql",
   host: process.env.DB_HOST,
@@ -11,15 +16,10 @@ const datasource = new DataSource({
   extra: { driver: "tedious", requestTimeout: 5000 }
 });
 
-// Schema debe ser definido con Zod directamente
-const paramsSchema = z.object({
-  producto: z.string().min(3)
-});
-
 export default {
   name: "consultar_precio",
-  description: "Devuelve EXACTAMENTE 1 producto coincidente o nada",
-  parameters: paramsSchema,  // Usamos el schema directamente
+  description: "Consulta precios de productos",
+  parameters: paramsSchema, // Usa el schema Zod directamente
   func: async ({ producto }) => {
     try {
       const [result] = await datasource.query(`
@@ -29,10 +29,10 @@ export default {
         ORDER BY LEN(NOMPROD)
       `, [producto.substring(0, 30)]);
 
-      return result ? `${result.NOMPROD}: $${result.PRECIO}` : "NO_ENCONTRADO";
+      return result ? `${result.NOMPROD}: $${result.PRECIO}` : "No encontré ese producto";
     } catch (error) {
       console.error("Error en precioTool:", error);
-      return "ERROR_TECNICO";
+      return "Error al consultar precios";
     }
   }
 };
