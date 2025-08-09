@@ -3,7 +3,7 @@
   "type": "module",
   "version": "1.0.0",
   "dependencies": {
-    "langchain": "0.1.0",  // Versión más reciente
+    "langchain": "0.1.0",
     "express": "4.18.2",
     "twilio": "4.23.0",
     "typeorm": "0.3.25",
