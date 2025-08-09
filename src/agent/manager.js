@@ -2,22 +2,6 @@ import { initializeAgentExecutorWithOptions } from "langchain/agents";
 import { ChatOpenAI } from "langchain/chat_models/openai";
 import { precioTool } from "./tools/index.js";
 
-const AGENT_CONFIG = {
-  agentType: "structured-chat-zero-shot-react-description",
-  verbose: false,
-  maxIterations: 6, // Estrictamente necesario
-  earlyStoppingMethod: "force",
-  handleParsingErrors: () => "Por favor pregunta sobre servicios de lavandería",
-  agentArgs: {
-    prefix: `Eres un asistente de Lavadísimo. Reglas absolutas:
-1. Usa SOLO la herramienta consultar_precio
-2. Si no hay resultados, di: "No ofrecemos ese servicio actualmente"
-3. Nunca inventes precios
-4. Máximo 1 producto por respuesta
-5. Formato: "[Producto]: $[Precio]"`
-  }
-};
-
 export async function initializeAgent() {
   const model = new ChatOpenAI({
     modelName: "gpt-3.5-turbo",
@@ -29,6 +13,18 @@ export async function initializeAgent() {
   return await initializeAgentExecutorWithOptions(
     [precioTool],
     model,
-    AGENT_CONFIG
+    {
+      agentType: "structured-chat-zero-shot-react-description",
+      verbose: false,
+      maxIterations: 8,
+      earlyStoppingMethod: "force",
+      handleParsingErrors: () => "Por favor pregunta sobre servicios de lavandería",
+      agentArgs: {
+        prefix: `Eres un asistente de Lavadísimo. Reglas absolutas:
+1. Usa SOLO la herramienta consultar_precio
+2. Respuestas breves (1 línea)
+3. Formato: "[Producto]: $[Precio]"`
+      }
+    }
   );
 }
