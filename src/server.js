@@ -2,7 +2,7 @@ import express from 'express';
 import twilio from 'twilio';
 const { Twilio } = twilio;
 import { initializeAgent } from './agent/manager.js';
-import { ConsoleCallbackHandler } from "langchain/callbacks";
+import { ConsoleCallbackHandler } from "@langchain/core/tracers/console";
 
 // Configuración SUPER reducida de logs
 const minimalHandler = new ConsoleCallbackHandler({
