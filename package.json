@@ -3,15 +3,16 @@
   "type": "module",
   "version": "1.0.0",
   "dependencies": {
-    "langchain": "0.0.210",
+    "langchain": "^0.0.210",
     "express": "4.18.2",
     "twilio": "4.23.0",
     "typeorm": "0.3.25",
     "mssql": "9.3.1",
     "tedious": "15.1.2",
     "reflect-metadata": "0.1.14",
-    "zod": "3.22.4",
-    "fast-levenshtein": "3.0.0"
+    "zod": "^3.22.4",  // Versión compatible con langchain
+    "fast-levenshtein": "3.0.0",
+    "zod-to-json-schema": "^3.21.4"  // Nueva dependencia requerida
   },
   "scripts": {
     "start": "node src/server.js",
@@ -23,6 +24,6 @@
     "npm": "10.x"
   },
   "resolutions": {
-    "reflect-metadata": "0.1.14"
+    "zod": "3.22.4"
   }
 }
