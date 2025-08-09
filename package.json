@@ -3,7 +3,7 @@
   "type": "module",
   "version": "1.0.0",
   "dependencies": {
-    "langchain": "0.0.210",
+    "langchain": "0.1.0",  // Versión más reciente
     "express": "4.18.2",
     "twilio": "4.23.0",
     "typeorm": "0.3.25",
@@ -24,6 +24,7 @@
     "npm": "10.x"
   },
   "resolutions": {
-    "zod": "3.22.4"
+    "zod": "3.22.4",
+    "zod-to-json-schema": "3.21.4"
   }
 }
