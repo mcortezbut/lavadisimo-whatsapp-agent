@@ -1,5 +1,5 @@
 import { ChatOpenAI } from "@langchain/openai";
-import { AgentExecutor, createStructuredChatAgent } from "@langchain/core/agents";
+import { initializeAgentExecutorWithOptions } from "@langchain/core/agents/initialize";
 import { precioTool } from "./tools/index.js";
 
 export async function initializeAgent() {
@@ -10,18 +10,15 @@ export async function initializeAgent() {
     timeout: 8000
   });
 
-  const agent = await createStructuredChatAgent({
-    llm: model,
-    tools: [precioTool],
-    promptPrefix: `Eres un asistente de Lavadísimo. Reglas absolutas:
+  return await initializeAgentExecutorWithOptions([precioTool], model, {
+    agentType: "structured-chat-zero-shot-react-description",
+    verbose: false,
+    maxIterations: 8,
+    agentArgs: {
+      prefix: `Eres un asistente de Lavadísimo. Reglas absolutas:
 1. Usa SOLO la herramienta consultar_precio
 2. Respuestas breves (1 línea)
 3. Formato: "[Producto]: $[Precio]"`
-  });
-
-  return AgentExecutor.fromAgentAndTools({
-    agent,
-    tools: [precioTool],
-    maxIterations: 8
+    }
   });
 }
