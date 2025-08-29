@@ -10,8 +10,9 @@ export async function initializeAgent() {
     timeout: 8000
   });
 
+  // CAMBIO CRÍTICO: usa "chat-zero-shot-react-description"
   return await initializeAgentExecutorWithOptions([precioTool, estadoTool], model, {
-    agentType: "zero-shot-react-description",
+    agentType: "chat-zero-shot-react-description",
     verbose: false,
     maxIterations: 8,
     agentArgs: {
