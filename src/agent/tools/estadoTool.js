@@ -23,7 +23,12 @@ export default {
   name: "verificar_estado",
   description: "Consulta el estado de una orden",
   parameters: paramsSchema,  // Schema Zod directo
-  type: "function", // <--- AGREGADO
+  type: "function",
+  function: {
+    name: "verificar_estado",
+    description: "Consulta el estado de una orden",
+    parameters: paramsSchema
+  },
   func: async ({ orden, telefono }) => {
     // ... resto del código igual
   }
