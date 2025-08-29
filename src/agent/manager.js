@@ -1,9 +1,5 @@
 import { ChatOpenAI } from "@langchain/openai";
-// Usa una de las siguientes opciones:
-import { initializeAgentExecutorWithOptions } from "@langchain/core";
-// O si lo recomienda la documentación (y tienes el paquete instalado):
-// import { initializeAgentExecutorWithOptions } from "@langchain/agents";
-
+import { initializeAgentExecutorWithOptions } from "@langchain/agents";
 import { precioTool } from "./tools/index.js";
 
 export async function initializeAgent() {
