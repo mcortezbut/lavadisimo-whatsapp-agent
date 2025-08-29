@@ -11,14 +11,14 @@ export async function initializeAgent() {
   });
 
   return await initializeAgentExecutorWithOptions([precioTool], model, {
-    agentType: "structured-chat-zero-shot-react-description",
-    verbose: false,
-    maxIterations: 8,
-    agentArgs: {
-      prefix: `Eres un asistente de Lavadísimo. Reglas absolutas:
+  agentType: "zero-shot-react-description",
+  verbose: false,
+  maxIterations: 8,
+  agentArgs: {
+    prefix: `Eres un asistente de Lavadísimo. Reglas absolutas:
 1. Usa SOLO la herramienta consultar_precio
 2. Respuestas breves (1 línea)
 3. Formato: "[Producto]: $[Precio]"`
-    }
-  });
+  }
+});
 }
