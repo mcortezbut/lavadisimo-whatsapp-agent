@@ -5,7 +5,7 @@ import { ChatPromptTemplate } from "@langchain/core/prompts";
 
 export async function initializeAgent() {
   const model = new ChatOpenAI({
-    modelName: "gpt-3.5-turbo-0613", // <-- Cambia aquí
+    modelName: "gpt-3.5-turbo", // <-- Cambia aquí
     temperature: 0,
     maxTokens: 100,
     timeout: 8000
