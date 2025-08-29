@@ -1,25 +1,35 @@
 import { ChatOpenAI } from "@langchain/openai";
-import { initializeAgentExecutorWithOptions } from "langchain/agents";
+import { createToolCallingAgent, AgentExecutor } from "langchain/agents";
 import { precioTool, estadoTool } from "./tools/index.js";
+import { ChatPromptTemplate } from "@langchain/core/prompts";
 
 export async function initializeAgent() {
   const model = new ChatOpenAI({
-    modelName: "gpt-3.5-turbo",
+    modelName: "gpt-3.5-turbo-0613", // <-- Cambia aquí
     temperature: 0,
     maxTokens: 100,
     timeout: 8000
   });
 
-  // CAMBIO CRÍTICO: usa "chat-zero-shot-react-description"
-  return await initializeAgentExecutorWithOptions([precioTool, estadoTool], model, {
-    agentType: "chat-zero-shot-react-description",
-    verbose: false,
-    maxIterations: 8,
-    agentArgs: {
-      prefix: `Eres un asistente de Lavadísimo. Reglas absolutas:
-1. Usa las herramientas consultar_precio y verificar_estado
-2. Respuestas breves (1 línea)
-3. Formato: "[Producto]: $[Precio]" o "Orden: [Estado]"`
-    }
+  const prompt = ChatPromptTemplate.fromMessages([
+    ["system", `Eres un asistente de Lavadísimo. 
+    Usa solo las herramientas consultar_precio y verificar_estado.
+    Responde siempre en una sola línea.
+    Formato precio: "[Producto]: $[Precio]"
+    Formato estado: "Orden: [Estado]"`],
+    ["human", "{input}"],
+    ["placeholder", "{agent_scratchpad}"]
+  ]);
+
+  const agent = await createToolCallingAgent({
+    llm: model,
+    tools: [precioTool, estadoTool],
+    prompt
+  });
+
+  // Retorna un executor que se puede usar con .invoke
+  return new AgentExecutor({
+    agent,
+    tools: [precioTool, estadoTool]
   });
 }
