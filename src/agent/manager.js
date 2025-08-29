@@ -1,6 +1,6 @@
 import { ChatOpenAI } from "@langchain/openai";
 import { initializeAgentExecutorWithOptions } from "langchain/agents";
-import { precioTool } from "./tools/index.js";
+import { precioTool, estadoTool } from "./tools/index.js";
 
 export async function initializeAgent() {
   const model = new ChatOpenAI({
@@ -10,15 +10,15 @@ export async function initializeAgent() {
     timeout: 8000
   });
 
-  return await initializeAgentExecutorWithOptions([precioTool], model, {
-  agentType: "zero-shot-react-description",
-  verbose: false,
-  maxIterations: 8,
-  agentArgs: {
-    prefix: `Eres un asistente de Lavadísimo. Reglas absolutas:
-1. Usa SOLO la herramienta consultar_precio
+  return await initializeAgentExecutorWithOptions([precioTool, estadoTool], model, {
+    agentType: "zero-shot-react-description",
+    verbose: false,
+    maxIterations: 8,
+    agentArgs: {
+      prefix: `Eres un asistente de Lavadísimo. Reglas absolutas:
+1. Usa las herramientas consultar_precio y verificar_estado
 2. Respuestas breves (1 línea)
-3. Formato: "[Producto]: $[Precio]"`
-  }
-});
+3. Formato: "[Producto]: $[Precio]" o "Orden: [Estado]"`
+    }
+  });
 }
