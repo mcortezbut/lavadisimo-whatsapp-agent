@@ -75,7 +75,7 @@ app.post('/webhook', async (req, res) => {
   try {
     console.log(`📩 Mensaje de ${From}: ${Body.substring(0, 50)}...`);
     
-    const agentResponse = await lavanderiaAgent.invoke({
+    const agentResponse = await lavanderiaAgent.call({
       input: Body.trim().substring(0, 100), // Limita entrada
       telefono: From.replace('whatsapp:+56', '')
     }, {
