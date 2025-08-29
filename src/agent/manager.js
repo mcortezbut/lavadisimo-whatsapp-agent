@@ -1,5 +1,5 @@
 import { ChatOpenAI } from "@langchain/openai";
-import { initializeAgentExecutorWithOptions } from "@langchain/agents";
+import { initializeAgentExecutorWithOptions } from "langchain/agents";
 import { precioTool } from "./tools/index.js";
 
 export async function initializeAgent() {
