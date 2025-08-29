@@ -20,6 +20,7 @@ export default {
   name: "consultar_precio",
   description: "Consulta precios de productos",
   parameters: paramsSchema, // Usa el schema Zod directamente
+  type: "function", // <--- AGREGADO
   func: async ({ producto }) => {
     try {
       const [result] = await datasource.query(`
