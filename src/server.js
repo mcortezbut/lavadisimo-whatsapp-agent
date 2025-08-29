@@ -16,6 +16,12 @@ const app = express();
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
+// LOG GLOBAL para todas las peticiones
+app.use((req, res, next) => {
+  console.log(`[DEBUG] ${req.method} ${req.path} - body:`, req.body);
+  next();
+});
+
 // Configura Twilio
 const twilioClient = new Twilio(
   process.env.TWILIO_ACCOUNT_SID,
