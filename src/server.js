@@ -74,25 +74,23 @@ app.post('/webhook', async (req, res) => {
 
   try {
     console.log(`📩 Mensaje de ${From}: ${Body.substring(0, 50)}...`);
-
     const agentResponse = await lavanderiaAgent.call({
       input: Body.trim().substring(0, 100),
       telefono: From.replace('whatsapp:+56', '')
     });
-
+    console.log("🟡 agentResponse:", agentResponse);
+  
     const cleanResponse = formatAgentResponse(agentResponse);
-
-    console.log(`📤 Respuesta: ${agentResponse.output.substring(0, 50)}...`);
-    
+  
+    console.log(`📤 Respuesta: ${agentResponse.output ? agentResponse.output.substring(0, 50) : 'Sin output'}...`);
     await twilioClient.messages.create({
-      body: agentResponse.output,
+      body: agentResponse.output || "No se pudo consultar el precio.",
       from: process.env.TWILIO_SANDBOX_NUMBER,
       to: From
     });
-
     res.status(200).send('<Response></Response>');
   } catch (error) {
-    console.error('❌ Error:', error.message);
+    console.error('❌ Error:', error.message, error);
     res.status(500).send('<Response><Message>Error procesando mensaje</Message></Response>');
   }
 });
