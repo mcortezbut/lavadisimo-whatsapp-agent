@@ -28,6 +28,10 @@ export default {
   },
   func: async ({ producto }) => {
     try {
+      if (!datasource.isInitialized) {
+        await datasource.initialize();
+      }
+
       const [result] = await datasource.query(`
         SELECT TOP 1 NOMPROD, PRECIO 
         FROM PRODUCTOS 

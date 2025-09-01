@@ -16,6 +16,7 @@
   },
   "scripts": {
     "start": "node src/server.js",
+    "test": "node scripts/test-agent.js",
     "fix-deps": "rm -rf node_modules package-lock.json && npm install --legacy-peer-deps",
     "prod": "NODE_ENV=production node src/server.js"
   },

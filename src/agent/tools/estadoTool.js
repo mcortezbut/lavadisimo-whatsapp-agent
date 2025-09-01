@@ -30,6 +30,47 @@ export default {
     parameters: paramsSchema
   },
   func: async ({ orden, telefono }) => {
-    // ... resto del código igual
+    try {
+      if (!datasource.isInitialized) {
+        await datasource.initialize();
+      }
+
+      let query, params;
+      
+      if (orden) {
+        query = `
+          SELECT TOP 1 NUMERO_ORDEN, ESTADO, FECHA_INGRESO, FECHA_ENTREGA 
+          FROM ORDENES 
+          WHERE NUMERO_ORDEN = @0 OR NUMERO_ORDEN LIKE '%' + @0 + '%'
+        `;
+        params = [orden.toString()];
+      } else if (telefono) {
+        query = `
+          SELECT TOP 1 NUMERO_ORDEN, ESTADO, FECHA_INGRESO, FECHA_ENTREGA 
+          FROM ORDENES 
+          WHERE TELEFONO_CLIENTE = @0 OR TELEFONO_CLIENTE LIKE '%' + @0 + '%'
+          ORDER BY FECHA_INGRESO DESC
+        `;
+        params = [telefono.replace(/\D/g, '')]; // Solo números
+      }
+
+      const [result] = await datasource.query(query, params);
+
+      if (result) {
+        const fechaEntrega = result.FECHA_ENTREGA ? 
+          new Date(result.FECHA_ENTREGA).toLocaleDateString('es-CL') : 
+          'Por definir';
+        
+        return `Orden ${result.NUMERO_ORDEN}: ${result.ESTADO}. Entrega: ${fechaEntrega}`;
+      }
+
+      return orden ? 
+        `No encontré la orden ${orden}` : 
+        `No encontré órdenes para el teléfono ${telefono}`;
+
+    } catch (error) {
+      console.error("Error en estadoTool:", error);
+      return "Error al consultar el estado de la orden";
+    }
   }
 };
