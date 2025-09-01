@@ -1,7 +1,8 @@
 import { z } from "zod";
 import { DataSource } from "typeorm";
+import { DynamicStructuredTool } from "@langchain/core/tools";
 
-// Primero define el schema Zod
+// Schema Zod para validación
 const paramsSchema = z.object({
   producto: z.string().min(3, "Mínimo 3 caracteres")
 });
@@ -16,16 +17,11 @@ const datasource = new DataSource({
   extra: { driver: "tedious", requestTimeout: 5000 }
 });
 
-export default {
+// Crear la herramienta usando DynamicStructuredTool
+const precioTool = new DynamicStructuredTool({
   name: "consultar_precio",
-  description: "Consulta precios de productos",
-  parameters: paramsSchema, // Usa el schema Zod directamente
-  type: "function",
-  function: {
-    name: "consultar_precio",
-    description: "Consulta precios de productos",
-    parameters: paramsSchema
-  },
+  description: "Consulta precios de productos de lavandería",
+  schema: paramsSchema,
   func: async ({ producto }) => {
     try {
       if (!datasource.isInitialized) {
@@ -45,4 +41,6 @@ export default {
       return "Error al consultar precios";
     }
   }
-};
+});
+
+export default precioTool;

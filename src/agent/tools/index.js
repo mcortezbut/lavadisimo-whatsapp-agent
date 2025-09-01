@@ -1,4 +1,2 @@
-import precioTool from './precioTool.js';
-import estadoTool from './estadoTool.js';
-
-export { precioTool, estadoTool };
+export { default as precioTool } from './precioTool.js';
+export { default as estadoTool } from './estadoTool.js';

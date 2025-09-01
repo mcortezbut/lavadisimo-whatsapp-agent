@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { DataSource } from "typeorm";
+import { DynamicStructuredTool } from "@langchain/core/tools";
 
 const datasource = new DataSource({
   type: "mssql",
@@ -11,7 +12,7 @@ const datasource = new DataSource({
   extra: { driver: "tedious" }
 });
 
-// Definir schema primero
+// Schema Zod para validación
 const paramsSchema = z.object({
   orden: z.string().optional(),
   telefono: z.string().optional()
@@ -19,16 +20,11 @@ const paramsSchema = z.object({
   message: "Debes proporcionar orden o teléfono"
 });
 
-export default {
+// Crear la herramienta usando DynamicStructuredTool
+const estadoTool = new DynamicStructuredTool({
   name: "verificar_estado",
-  description: "Consulta el estado de una orden",
-  parameters: paramsSchema,  // Schema Zod directo
-  type: "function",
-  function: {
-    name: "verificar_estado",
-    description: "Consulta el estado de una orden",
-    parameters: paramsSchema
-  },
+  description: "Consulta el estado de una orden de lavandería",
+  schema: paramsSchema,
   func: async ({ orden, telefono }) => {
     try {
       if (!datasource.isInitialized) {
@@ -73,4 +69,6 @@ export default {
       return "Error al consultar el estado de la orden";
     }
   }
-};
+});
+
+export default estadoTool;
