@@ -22,11 +22,20 @@ app.use((req, res, next) => {
   next();
 });
 
-// Configura Twilio con validación
+// Configura Twilio con validación detallada
+console.log('🔍 Verificando credenciales de Twilio...');
+console.log('TWILIO_ACCOUNT_SID:', process.env.TWILIO_ACCOUNT_SID ? `Configurado (${process.env.TWILIO_ACCOUNT_SID.substring(0, 10)}...)` : 'No configurado');
+console.log('TWILIO_AUTH_TOKEN:', process.env.TWILIO_AUTH_TOKEN ? `Configurado (${process.env.TWILIO_AUTH_TOKEN.substring(0, 10)}...)` : 'No configurado');
+console.log('TWILIO_SANDBOX_NUMBER:', process.env.TWILIO_SANDBOX_NUMBER || 'No configurado');
+
 if (!process.env.TWILIO_ACCOUNT_SID || !process.env.TWILIO_AUTH_TOKEN) {
   console.error('❌ Error: Faltan credenciales de Twilio');
-  console.log('TWILIO_ACCOUNT_SID:', process.env.TWILIO_ACCOUNT_SID ? 'Configurado' : 'No configurado');
-  console.log('TWILIO_AUTH_TOKEN:', process.env.TWILIO_AUTH_TOKEN ? 'Configurado' : 'No configurado');
+  process.exit(1);
+}
+
+// Verificar formato de credenciales
+if (!process.env.TWILIO_ACCOUNT_SID.startsWith('AC')) {
+  console.error('❌ Error: TWILIO_ACCOUNT_SID debe comenzar con "AC"');
   process.exit(1);
 }
 
@@ -34,6 +43,19 @@ const twilioClient = new Twilio(
   process.env.TWILIO_ACCOUNT_SID,
   process.env.TWILIO_AUTH_TOKEN
 );
+
+// Probar conexión con Twilio al iniciar
+(async () => {
+  try {
+    console.log('🔍 Probando conexión con Twilio...');
+    const account = await twilioClient.api.accounts(process.env.TWILIO_ACCOUNT_SID).fetch();
+    console.log('✅ Conexión con Twilio exitosa:', account.friendlyName);
+  } catch (error) {
+    console.error('❌ Error probando conexión con Twilio:', error.message);
+    console.error('Código de error:', error.code);
+    console.error('Más info:', error.moreInfo);
+  }
+})();
 
 // Configuración del handler de logs (antes de inicializar el Agent)
 const minimalConsoleHandler = new ConsoleCallbackHandler({
@@ -87,17 +109,34 @@ app.post('/webhook', async (req, res) => {
     });
     console.log("🟡 agentResponse:", agentResponse);
   
-    const cleanResponse = formatAgentResponse(agentResponse);
-  
-    console.log(`📤 Respuesta: ${agentResponse.output ? agentResponse.output.substring(0, 50) : 'Sin output'}...`);
-    await twilioClient.messages.create({
-      body: agentResponse.output || "No se pudo consultar el precio.",
-      from: process.env.TWILIO_SANDBOX_NUMBER,
-      to: From
-    });
-    res.status(200).send('<Response></Response>');
+    const responseText = agentResponse.output || "No se pudo procesar la consulta.";
+    console.log(`📤 Respuesta: ${responseText.substring(0, 50)}...`);
+    
+    // Intentar enviar con Twilio API
+    try {
+      await twilioClient.messages.create({
+        body: responseText,
+        from: process.env.TWILIO_SANDBOX_NUMBER,
+        to: From
+      });
+      console.log('✅ Mensaje enviado exitosamente via Twilio API');
+      res.status(200).send('<Response></Response>');
+    } catch (twilioError) {
+      console.error('❌ Error enviando con Twilio API:', twilioError.message);
+      console.log('🔄 Intentando respuesta alternativa con TwiML...');
+      
+      // Respuesta alternativa usando TwiML
+      const twimlResponse = `
+        <Response>
+          <Message>${responseText}</Message>
+        </Response>
+      `;
+      res.status(200).type('text/xml').send(twimlResponse);
+      console.log('✅ Respuesta enviada via TwiML');
+    }
+    
   } catch (error) {
-    console.error('❌ Error:', error.message, error);
+    console.error('❌ Error general:', error.message, error);
     res.status(500).send('<Response><Message>Error procesando mensaje</Message></Response>');
   }
 });
