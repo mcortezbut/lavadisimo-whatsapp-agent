@@ -22,7 +22,14 @@ app.use((req, res, next) => {
   next();
 });
 
-// Configura Twilio
+// Configura Twilio con validación
+if (!process.env.TWILIO_ACCOUNT_SID || !process.env.TWILIO_AUTH_TOKEN) {
+  console.error('❌ Error: Faltan credenciales de Twilio');
+  console.log('TWILIO_ACCOUNT_SID:', process.env.TWILIO_ACCOUNT_SID ? 'Configurado' : 'No configurado');
+  console.log('TWILIO_AUTH_TOKEN:', process.env.TWILIO_AUTH_TOKEN ? 'Configurado' : 'No configurado');
+  process.exit(1);
+}
+
 const twilioClient = new Twilio(
   process.env.TWILIO_ACCOUNT_SID,
   process.env.TWILIO_AUTH_TOKEN
