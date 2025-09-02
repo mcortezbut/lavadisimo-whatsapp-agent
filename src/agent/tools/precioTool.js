@@ -79,7 +79,7 @@ const sinonimos = {
 
 // Función para normalizar medidas (2x3 → 2 M. X 3 M.)
 function normalizarMedidas(texto) {
-  // Patrones de medidas comunes
+  // Patrones de medidas comunes - más flexible para detectar en frases
   const patronMedidas = /(\d+(?:[.,]\d+)?)\s*[xX×]\s*(\d+(?:[.,]\d+)?)/g;
   
   return texto.replace(patronMedidas, (match, ancho, largo) => {
@@ -90,12 +90,39 @@ function normalizarMedidas(texto) {
   });
 }
 
+// Función para extraer medidas específicas de frases
+function extraerMedidasDeFrase(texto) {
+  // Patrones comunes en frases con medidas
+  const patrones = [
+    /(?:es|la|de|una)\s+(\d+(?:[.,]\d+)?)\s*[xX×]\s*(\d+(?:[.,]\d+)?)/i,
+    /(?:medidas?|tamaño)\s+(\d+(?:[.,]\d+)?)\s*[xX×]\s*(\d+(?:[.,]\d+)?)/i,
+    /(\d+(?:[.,]\d+)?)\s*[xX×]\s*(\d+(?:[.,]\d+)?)\s*(?:metros|m\.?)/i
+  ];
+  
+  for (const patron of patrones) {
+    const match = texto.match(patron);
+    if (match) {
+      const ancho = match[1].replace('.', ',');
+      const largo = match[2].replace('.', ',');
+      return `${ancho} M. X ${largo} M.`;
+    }
+  }
+  
+  return null;
+}
+
 // Función para expandir términos de búsqueda
 function expandirBusqueda(termino) {
   let terminoNormalizado = normalizarMedidas(termino);
   const terminoLower = terminoNormalizado.toLowerCase().trim();
   
   let terminosExpandidos = [termino, terminoNormalizado];
+  
+  // Extraer medidas específicas de frases como "la de 2x3"
+  const medidaExtraida = extraerMedidasDeFrase(termino);
+  if (medidaExtraida) {
+    terminosExpandidos.push(medidaExtraida);
+  }
   
   // Buscar sinónimos palabra por palabra
   const palabras = terminoLower.split(/\s+/);
