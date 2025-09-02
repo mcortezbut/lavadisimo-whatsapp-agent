@@ -1,0 +1,25 @@
+{
+  "mssql.connections": [
+    {
+      "server": "${config:lavadisimo.dbHost}",
+      "database": "${config:lavadisimo.dbName}",
+      "user": "${config:lavadisimo.dbUser}",
+      "password": "",
+      "authenticationType": "SqlLogin",
+      "profileName": "Lavadisimo Production DB",
+      "encrypt": true,
+      "trustServerCertificate": true
+    }
+  ],
+  "lavadisimo.dbHost": "tu-servidor.database.windows.net",
+  "lavadisimo.dbName": "lavadisimo_db",
+  "lavadisimo.dbUser": "tu_usuario",
+  "files.associations": {
+    "*.sql": "sql"
+  },
+  "sql.format.keywordCase": "upper",
+  "editor.suggest.showSnippets": true,
+  "editor.quickSuggestions": {
+    "strings": true
+  }
+}

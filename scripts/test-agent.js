@@ -1,4 +1,8 @@
 import { initializeAgent } from '../src/agent/manager.js';
+import { config } from 'dotenv';
+
+// Cargar variables de entorno
+config();
 
 // Script de prueba para el agente sin necesidad de WhatsApp
 async function testAgent() {

@@ -12,11 +12,14 @@
     "mssql": "9.3.1",
     "tedious": "15.1.2",
     "reflect-metadata": "0.1.14",
-    "zod": "3.22.4"
+    "zod": "3.22.4",
+    "dotenv": "^16.0.0"
   },
   "scripts": {
     "start": "node src/server.js",
     "test": "node scripts/test-agent.js",
+    "explore-db": "node scripts/explore-database.js",
+    "sample-context": "node scripts/generate-sample-context.js",
     "fix-deps": "rm -rf node_modules package-lock.json && npm install --legacy-peer-deps",
     "prod": "NODE_ENV=production node src/server.js"
   },

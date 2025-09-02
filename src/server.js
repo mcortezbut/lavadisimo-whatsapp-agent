@@ -2,6 +2,7 @@ import express from 'express';
 import twilio from 'twilio';
 const { Twilio } = twilio;
 import { initializeAgent } from './agent/manager.js';
+import { guardarConversacionTool } from './agent/tools/memoriaTool.js';
 import { ConsoleCallbackHandler } from "@langchain/core/tracers/console";
 
 // Configuración SUPER reducida de logs
@@ -101,16 +102,45 @@ app.post('/webhook', async (req, res) => {
     return res.status(400).send('<Response><Message>Faltan parámetros</Message></Response>');
   }
 
+  const telefonoLimpio = From.replace('whatsapp:', '').replace('+', '');
+
   try {
     console.log(`📩 Mensaje de ${From}: ${Body.substring(0, 50)}...`);
+    
+    // Guardar mensaje entrante del cliente
+    try {
+      await guardarConversacionTool.func({
+        telefono: telefonoLimpio,
+        mensaje: Body,
+        tipo: 0, // 0 = mensaje entrante (cliente)
+        intencion: null,
+        contexto: null
+      });
+    } catch (error) {
+      console.log('⚠️ No se pudo guardar mensaje entrante:', error.message);
+    }
+
     const agentResponse = await lavanderiaAgent.invoke({
-      input: Body.trim().substring(0, 100),
-      telefono: From.replace('whatsapp:+56', '')
+      input: Body.trim(),
+      telefono: telefonoLimpio
     });
     console.log("🟡 agentResponse:", agentResponse);
   
     const responseText = agentResponse.output || "No se pudo procesar la consulta.";
     console.log(`📤 Respuesta: ${responseText.substring(0, 50)}...`);
+    
+    // Guardar respuesta del agente
+    try {
+      await guardarConversacionTool.func({
+        telefono: telefonoLimpio,
+        mensaje: responseText,
+        tipo: 1, // 1 = mensaje saliente (agente)
+        intencion: null,
+        contexto: null
+      });
+    } catch (error) {
+      console.log('⚠️ No se pudo guardar respuesta del agente:', error.message);
+    }
     
     // Intentar enviar con Twilio API
     try {
