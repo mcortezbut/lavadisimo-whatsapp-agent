@@ -83,8 +83,9 @@ function normalizarMedidas(texto) {
   const patronMedidas = /(\d+(?:[.,]\d+)?)\s*[xX×]\s*(\d+(?:[.,]\d+)?)/g;
   
   return texto.replace(patronMedidas, (match, ancho, largo) => {
-    const anchoNorm = ancho.replace(',', '.');
-    const largoNorm = largo.replace(',', '.');
+    // Convertir a formato de base de datos (usar comas)
+    const anchoNorm = ancho.replace('.', ',');
+    const largoNorm = largo.replace('.', ',');
     return `${anchoNorm} M. X ${largoNorm} M.`;
   });
 }
@@ -146,14 +147,52 @@ const precioTool = new DynamicStructuredTool({
       // Expandir términos de búsqueda usando sinónimos
       const terminosExpandidos = expandirBusqueda(producto);
       
-      // Crear condiciones de búsqueda para todos los términos
-      const condicionesBusqueda = terminosExpandidos.map((_, index) => 
-        `pt.NOMPROD LIKE '%' + @${index} + '%'`
-      ).join(' OR ');
+      // Detectar si la búsqueda incluye medidas específicas
+      const tieneMedidasEspecificas = terminosExpandidos.some(termino => 
+        termino.includes('M. X') || /\d+[.,]?\d*\s*[xX×]\s*\d+[.,]?\d*/.test(termino)
+      );
       
-      // Buscar productos que coincidan con cualquiera de los términos expandidos
+      let condicionesBusqueda;
+      let parametrosBusqueda;
+      
+      if (tieneMedidasEspecificas) {
+        // Búsqueda específica para medidas - mostrar solo coincidencias exactas o muy cercanas
+        condicionesBusqueda = terminosExpandidos.map((_, index) => 
+          `pt.NOMPROD LIKE '%' + @${index} + '%'`
+        ).join(' AND ');
+        parametrosBusqueda = terminosExpandidos;
+      } else {
+        // Búsqueda general - usar OR para términos expandidos
+        condicionesBusqueda = terminosExpandidos.map((_, index) => 
+          `pt.NOMPROD LIKE '%' + @${index} + '%'`
+        ).join(' OR ');
+        parametrosBusqueda = terminosExpandidos;
+      }
+      
+      // Determinar ordenamiento según tipo de búsqueda
+      let ordenamiento = `
+        ORDER BY 
+          CASE WHEN pt.NOMPROD LIKE @0 + '%' THEN 1 ELSE 2 END,
+          LEN(pt.NOMPROD),
+          pt.PRECIO
+      `;
+      
+      if (tieneMedidasEspecificas) {
+        // Para medidas específicas, priorizar coincidencias exactas
+        ordenamiento = `
+          ORDER BY 
+            CASE 
+              WHEN pt.NOMPROD LIKE '%${terminosExpandidos.join('%')}%' THEN 1
+              ELSE 2 
+            END,
+            LEN(pt.NOMPROD),
+            pt.PRECIO
+        `;
+      }
+      
+      // Buscar productos que coincidan con los términos
       const productos = await datasource.query(`
-        SELECT TOP 15 
+        SELECT TOP ${tieneMedidasEspecificas ? '5' : '15'} 
           pt.IDPROD,
           pt.NOMPROD, 
           pt.PRECIO,
@@ -165,11 +204,8 @@ const precioTool = new DynamicStructuredTool({
         WHERE (${condicionesBusqueda})
           AND pt.NULO = 0
           AND pt.IDUSUARIO = 'lavadisimo'
-        ORDER BY 
-          CASE WHEN pt.NOMPROD LIKE @0 + '%' THEN 1 ELSE 2 END,
-          LEN(pt.NOMPROD),
-          pt.PRECIO
-      `, terminosExpandidos);
+        ${ordenamiento}
+      `, parametrosBusqueda);
 
       if (productos.length === 0) {
         // Si no encuentra nada, buscar en categorías
