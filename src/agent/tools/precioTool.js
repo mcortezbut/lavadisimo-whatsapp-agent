@@ -42,6 +42,7 @@ const precioTool = new DynamicStructuredTool({
         LEFT JOIN CATEGORIAS c ON pt.IDGRUPO = c.IDGRUPO
         WHERE pt.NOMPROD LIKE '%' + @0 + '%' 
           AND pt.NULO = 0
+          AND pt.IDUSUARIO = 'lavadisimo'
         ORDER BY 
           CASE WHEN pt.NOMPROD LIKE @0 + '%' THEN 1 ELSE 2 END,
           LEN(pt.NOMPROD),
@@ -60,13 +61,15 @@ const precioTool = new DynamicStructuredTool({
           const categoria = categorias[0].NOMCAT;
           const productosCategoria = await datasource.query(`
             SELECT TOP 5
-              p.NOMPROD, 
-              p.PRECIO,
+              pt.NOMPROD, 
+              pt.PRECIO,
               c.NOMCAT as CATEGORIA
-            FROM PRODUCTOS p
-            INNER JOIN CATEGORIAS c ON p.IDGRUPO = c.IDGRUPO
-            WHERE c.NOMCAT = @0 AND p.NULO = 0
-            ORDER BY p.PRECIO
+            FROM PRODUCTOS pt
+            INNER JOIN (SELECT idprod, MAX(fechaupdate) AS maxdate FROM productos WHERE idusuario = 'lavadisimo' GROUP BY idprod) mt
+            ON pt.FECHAUPDATE = mt.maxdate AND pt.IDPROD = mt.IDPROD
+            INNER JOIN CATEGORIAS c ON pt.IDGRUPO = c.IDGRUPO
+            WHERE c.NOMCAT = @0 AND pt.NULO = 0 AND pt.IDUSUARIO = 'lavadisimo'
+            ORDER BY pt.PRECIO
           `, [categoria]);
 
           if (productosCategoria.length > 0) {
@@ -94,14 +97,17 @@ const precioTool = new DynamicStructuredTool({
         // Buscar productos relacionados o similares
         const similares = await datasource.query(`
           SELECT TOP 3
-            p.NOMPROD, 
-            p.PRECIO
-          FROM PRODUCTOS p
-          LEFT JOIN CATEGORIAS c ON p.IDGRUPO = c.IDGRUPO
-          WHERE p.IDPROD != @0 
-            AND (p.IDGRUPO = @1 OR p.NOMPROD LIKE '%' + @2 + '%')
-            AND p.NULO = 0
-          ORDER BY p.PRECIO
+            pt.NOMPROD, 
+            pt.PRECIO
+          FROM PRODUCTOS pt
+          INNER JOIN (SELECT idprod, MAX(fechaupdate) AS maxdate FROM productos WHERE idusuario = 'lavadisimo' GROUP BY idprod) mt
+          ON pt.FECHAUPDATE = mt.maxdate AND pt.IDPROD = mt.IDPROD
+          LEFT JOIN CATEGORIAS c ON pt.IDGRUPO = c.IDGRUPO
+          WHERE pt.IDPROD != @0 
+            AND (pt.IDGRUPO = @1 OR pt.NOMPROD LIKE '%' + @2 + '%')
+            AND pt.NULO = 0
+            AND pt.IDUSUARIO = 'lavadisimo'
+          ORDER BY pt.PRECIO
         `, [prod.IDPROD, prod.IDGRUPO || 0, producto.split(' ')[0]]);
 
         if (similares.length > 0) {
@@ -159,7 +165,24 @@ const precioTool = new DynamicStructuredTool({
 
     } catch (error) {
       console.error("Error en precioTool:", error);
-      return "Disculpa, tuve un problema al consultar los precios. ¿Podrías intentar nuevamente?";
+      
+      // Intentar cerrar la conexión si hay problemas
+      if (datasource.isInitialized) {
+        try {
+          await datasource.destroy();
+        } catch (destroyError) {
+          console.error("Error cerrando conexión:", destroyError);
+        }
+      }
+      
+      // Mensaje más específico según el tipo de error
+      if (error.code === 'ESOCKET' || error.message.includes('socket hang up')) {
+        return "Hay un problema temporal con la conexión a la base de datos. Por favor, intenta nuevamente en unos momentos.";
+      } else if (error.message.includes('timeout')) {
+        return "La consulta está tardando más de lo esperado. ¿Podrías intentar con un término más específico?";
+      } else {
+        return "Disculpa, tuve un problema al consultar los precios. ¿Podrías intentar nuevamente?";
+      }
     }
   }
 });

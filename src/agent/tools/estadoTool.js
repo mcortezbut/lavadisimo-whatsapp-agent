@@ -157,11 +157,13 @@ const estadoTool = new DynamicStructuredTool({
         const detalle = await datasource.query(`
           SELECT TOP 5
             d.CANT,
-            p.NOMPROD,
+            pt.NOMPROD,
             d.PRECIO
           FROM DETALLE d
-          INNER JOIN PRODUCTOS p ON d.IDPROD = p.IDPROD
-          WHERE d.NROVENTA = @0
+          INNER JOIN PRODUCTOS pt ON d.IDPROD = pt.IDPROD
+          INNER JOIN (SELECT idprod, MAX(fechaupdate) AS maxdate FROM productos WHERE idusuario = 'lavadisimo' GROUP BY idprod) mt
+          ON pt.FECHAUPDATE = mt.maxdate AND pt.IDPROD = mt.IDPROD
+          WHERE d.NROVENTA = @0 AND pt.IDUSUARIO = 'lavadisimo'
         `, [venta.NROVENTA]);
 
         if (detalle.length > 0) {
@@ -198,7 +200,24 @@ const estadoTool = new DynamicStructuredTool({
 
     } catch (error) {
       console.error("Error en estadoTool:", error);
-      return "Disculpa, tuve un problema al consultar el estado de tu orden. ¿Podrías intentar nuevamente?";
+      
+      // Intentar cerrar la conexión si hay problemas
+      if (datasource.isInitialized) {
+        try {
+          await datasource.destroy();
+        } catch (destroyError) {
+          console.error("Error cerrando conexión:", destroyError);
+        }
+      }
+      
+      // Mensaje más específico según el tipo de error
+      if (error.code === 'ESOCKET' || error.message.includes('socket hang up')) {
+        return "Hay un problema temporal con la conexión a la base de datos. Por favor, intenta nuevamente en unos momentos.";
+      } else if (error.message.includes('timeout')) {
+        return "La consulta está tardando más de lo esperado. ¿Podrías intentar nuevamente?";
+      } else {
+        return "Disculpa, tuve un problema al consultar el estado de tu orden. ¿Podrías intentar nuevamente?";
+      }
     }
   }
 });
