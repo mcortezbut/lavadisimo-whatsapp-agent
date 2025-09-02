@@ -76,9 +76,33 @@ let lavanderiaAgent;
   }
 })();
 
-// Ruta de health check
+// Ruta de health check con información de versión
 app.get('/', (req, res) => {
-  res.status(200).send('🛠️ Agent de Lavadísimo funcionando');
+  res.json({
+    status: 'OK',
+    message: '🛠️ Agent de Lavadísimo funcionando',
+    version: '2.0.0',
+    timestamp: new Date().toISOString(),
+    features: [
+      'Búsqueda inteligente de medidas',
+      'Sin invención de información',
+      'Uso obligatorio de herramientas'
+    ]
+  });
+});
+
+// Endpoint para verificar versión del código
+app.get('/version', (req, res) => {
+  res.json({
+    version: '2.0.0',
+    last_commit: '81c8d14d - Forzar uso obligatorio de herramientas',
+    deployment_time: new Date().toISOString(),
+    features: [
+      'extraerMedidasDeFrase implementado',
+      'Instrucciones críticas anti-invención',
+      'Uso obligatorio consultar_precio'
+    ]
+  });
 });
 
 // Agrega esto ANTES del endpoint /webhook
