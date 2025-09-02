@@ -36,7 +36,9 @@ const precioTool = new DynamicStructuredTool({
           p.NOMPROD, 
           p.PRECIO,
           c.NOMCAT as CATEGORIA
-        FROM PRODUCTOS p
+        FROM PRODUCTOS pt
+        INNER JOIN (SELECT idprod, MAX(fechaupdate) AS maxdate FROM productos WHERE idusuario = 'lavadisimo' GROUP BY idprod) mt
+        ON pt.FECHAUPDATE = mt.maxdate AND pt.IDPROD = mt.IDPROD
         LEFT JOIN CATEGORIAS c ON p.IDGRUPO = c.IDGRUPO
         WHERE p.NOMPROD LIKE '%' + @0 + '%' 
           AND p.NULO = 0
