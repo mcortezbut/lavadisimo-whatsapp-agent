@@ -1,6 +1,6 @@
 import { ChatOpenAI } from "@langchain/openai";
 import { createToolCallingAgent, AgentExecutor } from "langchain/agents";
-import { precioTool, estadoTool, obtenerHistorialTool } from "./tools/index.js";
+import { precioTool, precioFallbackTool, estadoTool, obtenerHistorialTool } from "./tools/index.js";
 import { ChatPromptTemplate } from "@langchain/core/prompts";
 
 export async function initializeAgent() {
@@ -18,6 +18,7 @@ export async function initializeAgent() {
 
     🛠️ HERRAMIENTAS DISPONIBLES:
     - consultar_precio: Consulta precios y variantes de servicios (más de 600 servicios disponibles)
+    - consultar_precio_fallback: Consulta precios usando base de datos local cuando hay problemas de conectividad
     - verificar_estado: Verifica el estado de órdenes por número de venta o teléfono
     - obtener_historial: Obtiene el historial de conversaciones para mantener contexto
 
@@ -60,7 +61,7 @@ export async function initializeAgent() {
     ["placeholder", "{agent_scratchpad}"]
   ]);
 
-  const tools = [precioTool, estadoTool, obtenerHistorialTool];
+  const tools = [precioTool, precioFallbackTool, estadoTool, obtenerHistorialTool];
 
   const agent = await createToolCallingAgent({
     llm: model,
