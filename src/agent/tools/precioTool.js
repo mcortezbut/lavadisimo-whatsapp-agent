@@ -27,63 +27,109 @@ const datasource = new DataSource({
   }
 });
 
-// Mapeo de sinónimos y abreviaciones para búsqueda inteligente
+// Sistema robusto de búsqueda inteligente
 const sinonimos = {
-  // Chaquetas
-  "chaqueta": ["CHAQ", "JACKET"],
-  "chaquetas": ["CHAQ", "JACKET"],
-  "jacket": ["CHAQ", "JACKET"],
-  "casaca": ["CHAQ", "JACKET"],
-  "casacas": ["CHAQ", "JACKET"],
+  // Productos principales
+  "chaqueta": ["CHAQ"],
+  "chaquetas": ["CHAQ"],
+  "casaca": ["CHAQ"],
+  "casacas": ["CHAQ"],
+  
+  "pantalon": ["PANT"],
+  "pantalones": ["PANT"],
+  "jeans": ["PANT"],
+  
+  "blusa": ["BLUS"],
+  "blusas": ["BLUS"],
+  "camisa": ["CAMI"],
+  "camisas": ["CAMI"],
+  
+  "cortina": ["CORTINA"],
+  "cortinas": ["CORTINA"],
+  
+  "alfombra": ["ALFOMBRA"],
+  "alfombras": ["ALFOMBRA"],
+  
+  "cobertor": ["COBERTOR"],
+  "cobertores": ["COBERTOR"],
+  "frazada": ["COBERTOR", "FRAZADA"],
+  "frazadas": ["COBERTOR", "FRAZADA"],
   
   // Materiales
   "cuero": ["CUERO", "CUERINA"],
-  "cuerina": ["CUERINA", "CUERO"],
-  "gamuza": ["GAMUZA", "CUERO"],
+  "cuerina": ["CUERINA"],
+  "gamuza": ["GAMUZA"],
   
-  // Pantalones
-  "pantalon": ["PANT", "PANTALON"],
-  "pantalones": ["PANT", "PANTALON"],
-  "jeans": ["PANT", "PANTALON"],
+  // Tamaños de cama
+  "una plaza": ["1 PL"],
+  "1 plaza": ["1 PL"],
+  "plaza y media": ["1 1/2 PL"],
+  "plaza y medio": ["1 1/2 PL"],
+  "dos plazas": ["2 PL"],
+  "2 plazas": ["2 PL"],
+  "king": ["KING"],
+  "super king": ["SUPER KING"],
   
-  // Blusas y camisas
-  "blusa": ["BLUS", "BLUSA"],
-  "blusas": ["BLUS", "BLUSA"],
-  "camisa": ["CAMI", "CAMISA"],
-  "camisas": ["CAMI", "CAMISA"],
-  "camiseta": ["CAMI", "CAMISETA"],
-  
-  // Cortinas
-  "cortina": ["CORT", "CORTINA"],
-  "cortinas": ["CORT", "CORTINA"],
-  
-  // Vestidos
-  "vestido": ["VEST", "VESTIDO"],
-  "vestidos": ["VEST", "VESTIDO"],
-  
-  // Polos
-  "polo": ["POLO"],
-  "polos": ["POLO"],
-  
-  // Faldas
-  "falda": ["FALDA"],
-  "faldas": ["FALDA"]
+  // Cortinas por tamaño
+  "pequeña": ["TALLA S"],
+  "mediana": ["TALLA M"],
+  "grande": ["TALLA L"],
+  "extra grande": ["XL"]
 };
+
+// Función para normalizar medidas (2x3 → 2 M. X 3 M.)
+function normalizarMedidas(texto) {
+  // Patrones de medidas comunes
+  const patronMedidas = /(\d+(?:[.,]\d+)?)\s*[xX×]\s*(\d+(?:[.,]\d+)?)/g;
+  
+  return texto.replace(patronMedidas, (match, ancho, largo) => {
+    const anchoNorm = ancho.replace(',', '.');
+    const largoNorm = largo.replace(',', '.');
+    return `${anchoNorm} M. X ${largoNorm} M.`;
+  });
+}
 
 // Función para expandir términos de búsqueda
 function expandirBusqueda(termino) {
-  const terminoLower = termino.toLowerCase().trim();
-  const palabras = terminoLower.split(' ');
+  let terminoNormalizado = normalizarMedidas(termino);
+  const terminoLower = terminoNormalizado.toLowerCase().trim();
   
-  let terminosExpandidos = [termino]; // Incluir término original
+  let terminosExpandidos = [termino, terminoNormalizado];
   
+  // Buscar sinónimos palabra por palabra
+  const palabras = terminoLower.split(/\s+/);
   palabras.forEach(palabra => {
     if (sinonimos[palabra]) {
       terminosExpandidos = terminosExpandidos.concat(sinonimos[palabra]);
     }
   });
   
-  return [...new Set(terminosExpandidos)]; // Eliminar duplicados
+  // Buscar frases completas
+  if (sinonimos[terminoLower]) {
+    terminosExpandidos = terminosExpandidos.concat(sinonimos[terminoLower]);
+  }
+  
+  return [...new Set(terminosExpandidos)].filter(t => t && t.trim());
+}
+
+// Función para crear búsqueda fuzzy más inteligente
+function crearBusquedaFuzzy(terminos) {
+  const condiciones = [];
+  
+  terminos.forEach((termino, index) => {
+    // Búsqueda exacta
+    condiciones.push(`pt.NOMPROD LIKE '%' + @${index} + '%'`);
+    
+    // Para medidas, también buscar sin espacios y con variaciones
+    if (termino.includes('M. X')) {
+      const sinEspacios = termino.replace(/\s+/g, '');
+      const conGuion = termino.replace(' X ', '-');
+      condiciones.push(`pt.NOMPROD LIKE '%${sinEspacios}%'`);
+      condiciones.push(`pt.NOMPROD LIKE '%${conGuion}%'`);
+    }
+  });
+  
+  return condiciones.join(' OR ');
 }
 
 // Crear la herramienta usando DynamicStructuredTool

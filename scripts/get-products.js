@@ -28,41 +28,58 @@ async function getProducts() {
     await datasource.initialize();
     console.log('✅ Conexión exitosa');
 
-    // Buscar chaquetas específicamente
-    const chaquetas = await datasource.query(`
-      SELECT DISTINCT pt.NOMPROD, pt.PRECIO
+    // Analizar patrones de alfombras
+    const alfombras = await datasource.query(`
+      SELECT DISTINCT TOP 30 pt.NOMPROD, pt.PRECIO
       FROM PRODUCTOS pt
       INNER JOIN (SELECT idprod, MAX(fechaupdate) AS maxdate FROM productos WHERE idusuario = 'lavadisimo' GROUP BY idprod) mt
       ON pt.FECHAUPDATE = mt.maxdate AND pt.IDPROD = mt.IDPROD
       WHERE pt.NULO = 0 AND pt.IDUSUARIO = 'lavadisimo'
-        AND (pt.NOMPROD LIKE '%CHAQ%' OR pt.NOMPROD LIKE '%JACKET%' OR pt.NOMPROD LIKE '%CUERO%')
-      ORDER BY pt.NOMPROD
+        AND pt.NOMPROD LIKE '%ALFOMBRA%'
+      ORDER BY pt.PRECIO
     `);
     
-    console.log('\n🧥 Productos relacionados con chaquetas/cuero:');
-    chaquetas.forEach((prod, index) => {
+    console.log('\n🏠 Patrones de alfombras:');
+    alfombras.forEach((prod, index) => {
       console.log(`${index + 1}. ${prod.NOMPROD} - $${parseInt(prod.PRECIO).toLocaleString('es-CL')}`);
     });
     
-    // Buscar otros productos comunes con abreviaciones
-    const otrosProductos = await datasource.query(`
-      SELECT DISTINCT TOP 20 pt.NOMPROD
+    // Analizar productos de cama
+    const cama = await datasource.query(`
+      SELECT DISTINCT TOP 20 pt.NOMPROD, pt.PRECIO
       FROM PRODUCTOS pt
       INNER JOIN (SELECT idprod, MAX(fechaupdate) AS maxdate FROM productos WHERE idusuario = 'lavadisimo' GROUP BY idprod) mt
       ON pt.FECHAUPDATE = mt.maxdate AND pt.IDPROD = mt.IDPROD
       WHERE pt.NULO = 0 AND pt.IDUSUARIO = 'lavadisimo'
-        AND (pt.NOMPROD LIKE '%PANT%' OR pt.NOMPROD LIKE '%BLUS%' OR pt.NOMPROD LIKE '%CORT%' 
-             OR pt.NOMPROD LIKE '%VEST%' OR pt.NOMPROD LIKE '%CAMI%' OR pt.NOMPROD LIKE '%POLO%')
+        AND (pt.NOMPROD LIKE '%COBERTOR%' OR pt.NOMPROD LIKE '%FRAZADA%' OR pt.NOMPROD LIKE '%EDREDON%' 
+             OR pt.NOMPROD LIKE '%PLUMON%' OR pt.NOMPROD LIKE '%SABANA%' OR pt.NOMPROD LIKE '%PL%')
       ORDER BY pt.NOMPROD
     `);
     
-    console.log('\n👕 Otros productos de ropa:');
-    otrosProductos.forEach((prod, index) => {
-      console.log(`${index + 1}. ${prod.NOMPROD}`);
+    console.log('\n🛏️ Productos de cama:');
+    cama.forEach((prod, index) => {
+      console.log(`${index + 1}. ${prod.NOMPROD} - $${parseInt(prod.PRECIO).toLocaleString('es-CL')}`);
     });
     
-    console.log(`\n📊 Chaquetas encontradas: ${chaquetas.length}`);
-    console.log(`📊 Otros productos de ropa: ${otrosProductos.length}`);
+    // Analizar cortinas
+    const cortinas = await datasource.query(`
+      SELECT DISTINCT TOP 15 pt.NOMPROD, pt.PRECIO
+      FROM PRODUCTOS pt
+      INNER JOIN (SELECT idprod, MAX(fechaupdate) AS maxdate FROM productos WHERE idusuario = 'lavadisimo' GROUP BY idprod) mt
+      ON pt.FECHAUPDATE = mt.maxdate AND pt.IDPROD = mt.IDPROD
+      WHERE pt.NULO = 0 AND pt.IDUSUARIO = 'lavadisimo'
+        AND pt.NOMPROD LIKE '%CORTINA%'
+      ORDER BY pt.PRECIO
+    `);
+    
+    console.log('\n🪟 Productos de cortinas:');
+    cortinas.forEach((prod, index) => {
+      console.log(`${index + 1}. ${prod.NOMPROD} - $${parseInt(prod.PRECIO).toLocaleString('es-CL')}`);
+    });
+    
+    console.log(`\n📊 Alfombras encontradas: ${alfombras.length}`);
+    console.log(`📊 Productos de cama: ${cama.length}`);
+    console.log(`📊 Cortinas: ${cortinas.length}`);
     
     await datasource.destroy();
     console.log('🔌 Conexión cerrada');
