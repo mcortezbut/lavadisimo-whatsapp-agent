@@ -32,20 +32,20 @@ const precioTool = new DynamicStructuredTool({
       // Buscar productos que coincidan con la consulta
       const productos = await datasource.query(`
         SELECT TOP 10 
-          p.IDPROD,
-          p.NOMPROD, 
-          p.PRECIO,
+          pt.IDPROD,
+          pt.NOMPROD, 
+          pt.PRECIO,
           c.NOMCAT as CATEGORIA
         FROM PRODUCTOS pt
         INNER JOIN (SELECT idprod, MAX(fechaupdate) AS maxdate FROM productos WHERE idusuario = 'lavadisimo' GROUP BY idprod) mt
         ON pt.FECHAUPDATE = mt.maxdate AND pt.IDPROD = mt.IDPROD
-        LEFT JOIN CATEGORIAS c ON p.IDGRUPO = c.IDGRUPO
-        WHERE p.NOMPROD LIKE '%' + @0 + '%' 
-          AND p.NULO = 0
+        LEFT JOIN CATEGORIAS c ON pt.IDGRUPO = c.IDGRUPO
+        WHERE pt.NOMPROD LIKE '%' + @0 + '%' 
+          AND pt.NULO = 0
         ORDER BY 
-          CASE WHEN p.NOMPROD LIKE @0 + '%' THEN 1 ELSE 2 END,
-          LEN(p.NOMPROD),
-          p.PRECIO
+          CASE WHEN pt.NOMPROD LIKE @0 + '%' THEN 1 ELSE 2 END,
+          LEN(pt.NOMPROD),
+          pt.PRECIO
       `, [producto]);
 
       if (productos.length === 0) {
