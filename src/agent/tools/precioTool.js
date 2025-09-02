@@ -279,7 +279,7 @@ const precioTool = new DynamicStructuredTool({
           respuesta += ` (${prod.CATEGORIA})`;
         }
 
-        // Buscar productos relacionados o similares
+        // Buscar productos relacionados o similares (solo si existen)
         const similares = await datasource.query(`
           SELECT TOP 3
             pt.NOMPROD, 
@@ -302,7 +302,8 @@ const precioTool = new DynamicStructuredTool({
           });
         }
 
-        respuesta += `\n¿Te gustaría agendar este servicio o necesitas más información?`;
+        // Respuesta 100% específica sin inventar información
+        respuesta += `\n¿Te gustaría agendar este servicio?`;
         return respuesta;
       }
 
