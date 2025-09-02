@@ -5,11 +5,20 @@ import { DynamicStructuredTool } from "@langchain/core/tools";
 const datasource = new DataSource({
   type: "mssql",
   host: process.env.DB_HOST,
+  port: process.env.DB_PORT ? parseInt(process.env.DB_PORT) : undefined,
   username: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
-  options: { encrypt: true, trustServerCertificate: true },
-  extra: { driver: "tedious", requestTimeout: 10000 }
+  options: { 
+    encrypt: false, 
+    trustServerCertificate: true,
+    enableArithAbort: true
+  },
+  extra: { 
+    driver: "tedious", 
+    requestTimeout: 30000,
+    connectionTimeout: 30000
+  }
 });
 
 // Schema Zod para validación
