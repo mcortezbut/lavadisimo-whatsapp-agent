@@ -27,10 +27,69 @@ const datasource = new DataSource({
   }
 });
 
+// Mapeo de sinónimos y abreviaciones para búsqueda inteligente
+const sinonimos = {
+  // Chaquetas
+  "chaqueta": ["CHAQ", "JACKET"],
+  "chaquetas": ["CHAQ", "JACKET"],
+  "jacket": ["CHAQ", "JACKET"],
+  "casaca": ["CHAQ", "JACKET"],
+  "casacas": ["CHAQ", "JACKET"],
+  
+  // Materiales
+  "cuero": ["CUERO", "CUERINA"],
+  "cuerina": ["CUERINA", "CUERO"],
+  "gamuza": ["GAMUZA", "CUERO"],
+  
+  // Pantalones
+  "pantalon": ["PANT", "PANTALON"],
+  "pantalones": ["PANT", "PANTALON"],
+  "jeans": ["PANT", "PANTALON"],
+  
+  // Blusas y camisas
+  "blusa": ["BLUS", "BLUSA"],
+  "blusas": ["BLUS", "BLUSA"],
+  "camisa": ["CAMI", "CAMISA"],
+  "camisas": ["CAMI", "CAMISA"],
+  "camiseta": ["CAMI", "CAMISETA"],
+  
+  // Cortinas
+  "cortina": ["CORT", "CORTINA"],
+  "cortinas": ["CORT", "CORTINA"],
+  
+  // Vestidos
+  "vestido": ["VEST", "VESTIDO"],
+  "vestidos": ["VEST", "VESTIDO"],
+  
+  // Polos
+  "polo": ["POLO"],
+  "polos": ["POLO"],
+  
+  // Faldas
+  "falda": ["FALDA"],
+  "faldas": ["FALDA"]
+};
+
+// Función para expandir términos de búsqueda
+function expandirBusqueda(termino) {
+  const terminoLower = termino.toLowerCase().trim();
+  const palabras = terminoLower.split(' ');
+  
+  let terminosExpandidos = [termino]; // Incluir término original
+  
+  palabras.forEach(palabra => {
+    if (sinonimos[palabra]) {
+      terminosExpandidos = terminosExpandidos.concat(sinonimos[palabra]);
+    }
+  });
+  
+  return [...new Set(terminosExpandidos)]; // Eliminar duplicados
+}
+
 // Crear la herramienta usando DynamicStructuredTool
 const precioTool = new DynamicStructuredTool({
   name: "consultar_precio",
-  description: "Consulta precios de servicios de lavandería. Puede mostrar múltiples variantes y opciones disponibles para ayudar al cliente a elegir el servicio más adecuado.",
+  description: "Consulta precios de servicios de lavandería. Puede mostrar múltiples variantes y opciones disponibles para ayudar al cliente a elegir el servicio más adecuado. Reconoce sinónimos y abreviaciones comunes.",
   schema: paramsSchema,
   func: async ({ producto, telefono }) => {
     try {
@@ -38,9 +97,17 @@ const precioTool = new DynamicStructuredTool({
         await datasource.initialize();
       }
 
-      // Buscar productos que coincidan con la consulta
+      // Expandir términos de búsqueda usando sinónimos
+      const terminosExpandidos = expandirBusqueda(producto);
+      
+      // Crear condiciones de búsqueda para todos los términos
+      const condicionesBusqueda = terminosExpandidos.map((_, index) => 
+        `pt.NOMPROD LIKE '%' + @${index} + '%'`
+      ).join(' OR ');
+      
+      // Buscar productos que coincidan con cualquiera de los términos expandidos
       const productos = await datasource.query(`
-        SELECT TOP 10 
+        SELECT TOP 15 
           pt.IDPROD,
           pt.NOMPROD, 
           pt.PRECIO,
@@ -49,14 +116,14 @@ const precioTool = new DynamicStructuredTool({
         INNER JOIN (SELECT idprod, MAX(fechaupdate) AS maxdate FROM productos WHERE idusuario = 'lavadisimo' GROUP BY idprod) mt
         ON pt.FECHAUPDATE = mt.maxdate AND pt.IDPROD = mt.IDPROD
         LEFT JOIN CATEGORIAS c ON pt.IDGRUPO = c.IDGRUPO
-        WHERE pt.NOMPROD LIKE '%' + @0 + '%' 
+        WHERE (${condicionesBusqueda})
           AND pt.NULO = 0
           AND pt.IDUSUARIO = 'lavadisimo'
         ORDER BY 
           CASE WHEN pt.NOMPROD LIKE @0 + '%' THEN 1 ELSE 2 END,
           LEN(pt.NOMPROD),
           pt.PRECIO
-      `, [producto]);
+      `, terminosExpandidos);
 
       if (productos.length === 0) {
         // Si no encuentra nada, buscar en categorías
