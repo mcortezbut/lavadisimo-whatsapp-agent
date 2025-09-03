@@ -51,16 +51,21 @@ function extraerMedidasPrecisas(texto) {
   return null;
 }
 
-// Función para extraer medidas de nombres de productos (ej: "ALFOMBRA 1,6 M. X 2,3 M.")
+// Función para extraer medidas de nombres de productos (ej: "ALFOMBRA 1,6 M. X 2,3 M." o "ALFOMBRA 2 M. X 3 M.")
 function extraerMedidasDeProducto(nombreProducto) {
-  const patron = /(\d+[.,]\d+)\s*M\.\s*X\s*(\d+[.,]\d+)\s*M\./;
+  const patron = /(\d+[.,]?\d*)\s*[Mm]?\.?\s*[xX×]\s*(\d+[.,]?\d*)\s*[Mm]?\.?/i;
   const match = nombreProducto.match(patron);
   if (match) {
     const ancho = parseFloat(match[1].replace(',', '.'));
-    const largo = parseFloat(match[2].replace(',', '.'));
+    const largo = parseFloat(match[3].replace(',', '.'));
     return { ancho, largo };
   }
   return null;
+}
+
+// Función para verificar si el nombre del producto ya contiene medidas
+function nombreContieneMedidas(nombre) {
+  return /(\d+[.,]?\d*)\s*[Mm]?\.?\s*[xX×]\s*(\d+[.,]?\d*)\s*[Mm]?\.?/i.test(nombre);
 }
 
 // Función para calcular diferencia numérica entre medidas
@@ -194,8 +199,9 @@ const precisionSearchTool = new DynamicStructuredTool({
           if (alfombras.length > 0) {
             let respuesta = `No encontré la medida exacta, pero tenemos estas opciones de alfombras:\n\n`;
             alfombras.forEach((prod, index) => {
+              // Solo agregar medidas si el nombre no las contiene ya
               const medidas = extraerMedidasDeProducto(prod.NOMPROD);
-              const infoMedidas = medidas ? ` (${medidas.ancho} x ${medidas.largo} m)` : '';
+              const infoMedidas = (medidas && !nombreContieneMedidas(prod.NOMPROD)) ? ` (${medidas.ancho} x ${medidas.largo} m)` : '';
               respuesta += `${index + 1}. ${prod.NOMPROD}: $${parseInt(prod.PRECIO).toLocaleString('es-CL')}${infoMedidas}\n`;
             });
             respuesta += `\n¿Te interesa alguna de estas?`;
@@ -214,8 +220,9 @@ const precisionSearchTool = new DynamicStructuredTool({
       let respuesta = `Encontré ${resultados.length} opciones para "${producto}":\n\n`;
       
       resultados.forEach((prod, index) => {
+        // Solo agregar medidas si el nombre no las contiene ya
         const medidas = extraerMedidasDeProducto(prod.NOMPROD);
-        const infoMedidas = medidas ? ` (${medidas.ancho} x ${medidas.largo} m)` : '';
+        const infoMedidas = (medidas && !nombreContieneMedidas(prod.NOMPROD)) ? ` (${medidas.ancho} x ${medidas.largo} m)` : '';
         respuesta += `${index + 1}. ${prod.NOMPROD}: $${parseInt(prod.PRECIO).toLocaleString('es-CL')}${infoMedidas}\n`;
       });
 
