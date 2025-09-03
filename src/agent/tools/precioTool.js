@@ -78,6 +78,7 @@ const sinonimos = {
   
   // Coche bebé (carrito de bebé)
   "coche": ["COCHE"],
+  "choche": ["COCHE"], // común error de tipeo
   "coche bebé": ["COCHE"],
   "carrito": ["COCHE"],
   "carrito de bebé": ["COCHE"],
