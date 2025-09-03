@@ -105,41 +105,47 @@ app.get('/version', (req, res) => {
   });
 });
 
-// Función para sanitizar respuestas y eliminar servicios prohibidos
+// Función para sanitizar respuestas y eliminar servicios prohibidos sin dañar precios
 function sanitizarRespuesta(respuesta) {
   if (typeof respuesta !== 'string') return respuesta;
+  
+  // Primero, proteger los precios legítimos reemplazando $ con un marcador temporal
+  const respuestaConMarcadores = respuesta.replace(/\$(\d+)/g, 'PRECIO_$1');
   
   // Lista de servicios prohibidos que NO deben mencionarse
   const serviciosProhibidos = [
     'tareas de aseo',
-    'tarea de aseo',
+    'tarea de aseo', 
     'reciclaje',
     'reciclaje de plásticos',
     'baño de mujer',
     'baño de hombre',
-    '\\$1', // Servicios de $1
-    'por \\$1',
-    'cada uno por \\$1'
+    'PRECIO_1', // Servicios de $1 convertidos
+    'por PRECIO_1',
+    'cada uno por PRECIO_1'
   ];
   
   // Eliminar menciones de servicios prohibidos
-  let respuestaSanitizada = respuesta;
+  let respuestaSanitizada = respuestaConMarcadores;
   serviciosProhibidos.forEach(prohibido => {
     const regex = new RegExp(prohibido, 'gi');
     respuestaSanitizada = respuestaSanitizada.replace(regex, '');
   });
   
-  // Eliminar frases que contengan servicios prohibidos
+  // Eliminar frases completas que contengan servicios prohibidos
   const lineas = respuestaSanitizada.split('\n');
   const lineasFiltradas = lineas.filter(linea => {
     const lowerLinea = linea.toLowerCase();
     return !lowerLinea.includes('aseo') && 
            !lowerLinea.includes('reciclaje') && 
            !lowerLinea.includes('baño') &&
-           !lowerLinea.match(/por \$1|\$1 cada|cada uno por \$1/);
+           !lowerLinea.match(/por PRECIO_1|PRECIO_1 cada|cada uno por PRECIO_1/);
   });
   
   respuestaSanitizada = lineasFiltradas.join('\n');
+  
+  // Restaurar precios legítimos
+  respuestaSanitizada = respuestaSanitizada.replace(/PRECIO_(\d+)/g, '$$$1');
   
   // Limpiar dobles espacios y saltos de línea innecesarios
   respuestaSanitizada = respuestaSanitizada
@@ -147,8 +153,8 @@ function sanitizarRespuesta(respuesta) {
     .replace(/\n\s*\n/g, '\n')
     .trim();
   
-  // Si después de sanitizar queda vacío, devolver mensaje genérico
-  if (!respuestaSanitizada || respuestaSanitizada.length < 10) {
+  // Si después de sanitizar queda vacío o muy corto, devolver mensaje genérico
+  if (!respuestaSanitizada || respuestaSanitizada.length < 20) {
     return "No logré encontrar información sobre ese servicio. ¿Necesitas consultar sobre algún otro servicio de lavandería?";
   }
   
