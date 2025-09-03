@@ -1,6 +1,6 @@
 import { ChatOpenAI } from "@langchain/openai";
 import { createToolCallingAgent, AgentExecutor } from "langchain/agents";
-import { busquedaAvanzadaTool, estadoTool, obtenerHistorialTool } from "./tools/index.js";
+import { precisionSearchTool, estadoTool, obtenerHistorialTool } from "./tools/index.js";
 import { ChatPromptTemplate } from "@langchain/core/prompts";
 
 export async function initializeAgent() {
@@ -121,7 +121,7 @@ Cliente: "Y la de 2x3 cuanto es?"
     ["placeholder", "{agent_scratchpad}"]
   ]);
 
-  const tools = [busquedaAvanzadaTool, estadoTool, obtenerHistorialTool];
+  const tools = [precisionSearchTool, estadoTool, obtenerHistorialTool];
 
   const agent = await createToolCallingAgent({
     llm: model,
