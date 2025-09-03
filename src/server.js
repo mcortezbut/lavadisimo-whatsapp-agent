@@ -105,6 +105,56 @@ app.get('/version', (req, res) => {
   });
 });
 
+// Función para sanitizar respuestas y eliminar servicios prohibidos
+function sanitizarRespuesta(respuesta) {
+  if (typeof respuesta !== 'string') return respuesta;
+  
+  // Lista de servicios prohibidos que NO deben mencionarse
+  const serviciosProhibidos = [
+    'tareas de aseo',
+    'tarea de aseo',
+    'reciclaje',
+    'reciclaje de plásticos',
+    'baño de mujer',
+    'baño de hombre',
+    '\\$1', // Servicios de $1
+    'por \\$1',
+    'cada uno por \\$1'
+  ];
+  
+  // Eliminar menciones de servicios prohibidos
+  let respuestaSanitizada = respuesta;
+  serviciosProhibidos.forEach(prohibido => {
+    const regex = new RegExp(prohibido, 'gi');
+    respuestaSanitizada = respuestaSanitizada.replace(regex, '');
+  });
+  
+  // Eliminar frases que contengan servicios prohibidos
+  const lineas = respuestaSanitizada.split('\n');
+  const lineasFiltradas = lineas.filter(linea => {
+    const lowerLinea = linea.toLowerCase();
+    return !lowerLinea.includes('aseo') && 
+           !lowerLinea.includes('reciclaje') && 
+           !lowerLinea.includes('baño') &&
+           !lowerLinea.match(/por \$1|\$1 cada|cada uno por \$1/);
+  });
+  
+  respuestaSanitizada = lineasFiltradas.join('\n');
+  
+  // Limpiar dobles espacios y saltos de línea innecesarios
+  respuestaSanitizada = respuestaSanitizada
+    .replace(/\s+/g, ' ')
+    .replace(/\n\s*\n/g, '\n')
+    .trim();
+  
+  // Si después de sanitizar queda vacío, devolver mensaje genérico
+  if (!respuestaSanitizada || respuestaSanitizada.length < 10) {
+    return "No logré encontrar información sobre ese servicio. ¿Necesitas consultar sobre algún otro servicio de lavandería?";
+  }
+  
+  return respuestaSanitizada;
+}
+
 // Agrega esto ANTES del endpoint /webhook
 const formatAgentResponse = (rawResponse) => {
   if (typeof rawResponse === 'string') {
@@ -150,8 +200,12 @@ app.post('/webhook', async (req, res) => {
     });
     console.log("🟡 agentResponse:", agentResponse);
   
-    const responseText = agentResponse.output || "No se pudo procesar la consulta.";
+    let responseText = agentResponse.output || "No se pudo procesar la consulta.";
     console.log(`📤 Respuesta: ${responseText.substring(0, 50)}...`);
+    
+    // Aplicar sanitización para eliminar servicios prohibidos
+    responseText = sanitizarRespuesta(responseText);
+    console.log(`🔄 Respuesta sanitizada: ${responseText.substring(0, 50)}...`);
     
     // Guardar respuesta del agente
     try {
