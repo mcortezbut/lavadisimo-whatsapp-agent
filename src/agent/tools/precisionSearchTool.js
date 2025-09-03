@@ -134,7 +134,7 @@ async function buscarPorMedidasExactas(medidasTarget, categoria = "alfombra") {
       
       // Si no hay coincidencia cercana, devolver todas las opciones de la categoría
       return productos.filter(p => 
-        p.NOMPROD.includes('ALFOMBRA') && p.NOMPROD.includes('M. X')
+        p.NOMPROD.includes('ALFOMBRA')
       ).slice(0, 5);
     }
 
@@ -238,3 +238,4 @@ const precisionSearchTool = new DynamicStructuredTool({
 });
 
 export default precisionSearchTool;
+export { extraerMedidasDeProducto, buscarPorMedidasExactas };
