@@ -115,9 +115,9 @@ function extraerYNormalizarMedidas(texto) {
   return extraerMedidasDeFrase(texto);
 }
 
-// Función para parsear medidas en valores numéricos
+// Función para parsear medidas en valores numéricos (soporta enteros y decimales)
 function parsearMedidasANumeros(medidaStr) {
-  const patron = /(\d+[.,]\d+)\s*M\.\s*X\s*(\d+[.,]\d+)\s*M\./;
+  const patron = /(\d+(?:[.,]\d+)?)\s*M\.\s*X\s*(\d+(?:[.,]\d+)?)\s*M\./;
   const match = medidaStr.match(patron);
   
   if (match) {
@@ -485,4 +485,5 @@ const precioTool = new DynamicStructuredTool({
   }
 });
 
+export { encontrarMedidaCercana, parsearMedidasANumeros };
 export default precioTool;
