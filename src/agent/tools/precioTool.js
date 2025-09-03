@@ -85,17 +85,89 @@ const sinonimos = {
   "cochecito": ["COCHE"]
 };
 
-// Función para normalizar medidas (2x3 → 2 M. X 3 M.)
+// Función para normalizar medidas (2x3 → 2 M. X 3 M.) con soporte para puntos y comas
 function normalizarMedidas(texto) {
-  // Patrones de medidas comunes - más flexible para detectar en frases
+  // Patrón más robusto para detectar medidas con diferentes separadores
   const patronMedidas = /(\d+(?:[.,]\d+)?)\s*[xX×]\s*(\d+(?:[.,]\d+)?)/g;
   
   return texto.replace(patronMedidas, (match, ancho, largo) => {
-    // Convertir a formato de base de datos (usar comas)
+    // Normalizar a formato de base de datos (usar comas)
     const anchoNorm = ancho.replace('.', ',');
     const largoNorm = largo.replace('.', ',');
     return `${anchoNorm} M. X ${largoNorm} M.`;
   });
+}
+
+// Función para extraer y normalizar medidas de cualquier formato
+function extraerYNormalizarMedidas(texto) {
+  // Primero, normalizar el texto completo
+  const textoNormalizado = normalizarMedidas(texto);
+  
+  // Extraer medidas específicas después de normalización
+  const patronMedidas = /(\d+[.,]\d+)\s*M\.\s*X\s*(\d+[.,]\d+)\s*M\./;
+  const match = textoNormalizado.match(patronMedidas);
+  
+  if (match) {
+    return `${match[1]} M. X ${match[2]} M.`;
+  }
+  
+  // Si no se encuentra con el patrón normalizado, intentar extraer de frases
+  return extraerMedidasDeFrase(texto);
+}
+
+// Función para parsear medidas en valores numéricos
+function parsearMedidasANumeros(medidaStr) {
+  const patron = /(\d+[.,]\d+)\s*M\.\s*X\s*(\d+[.,]\d+)\s*M\./;
+  const match = medidaStr.match(patron);
+  
+  if (match) {
+    const ancho = parseFloat(match[1].replace(',', '.'));
+    const largo = parseFloat(match[2].replace(',', '.'));
+    return { ancho, largo };
+  }
+  return null;
+}
+
+// Función para encontrar la medida más cercana en la base de datos
+async function encontrarMedidaCercana(anchoTarget, largoTarget) {
+  try {
+    if (!datasource.isInitialized) {
+      await datasource.initialize();
+    }
+
+    // Obtener todas las alfombras con medidas
+    const productos = await datasource.query(`
+      SELECT pt.NOMPROD, pt.PRECIO
+      FROM PRODUCTOS pt
+      INNER JOIN (SELECT idprod, MAX(fechaupdate) AS maxdate FROM productos WHERE idusuario = 'lavadisimo' GROUP BY idprod) mt
+      ON pt.FECHAUPDATE = mt.maxdate AND pt.IDPROD = mt.IDPROD
+      WHERE pt.NULO = 0 AND pt.IDUSUARIO = 'lavadisimo'
+        AND pt.NOMPROD LIKE '% M. X % M.%'
+      ORDER BY pt.NOMPROD
+    `);
+
+    let mejorMatch = null;
+    let menorDiferencia = Infinity;
+
+    for (const prod of productos) {
+      const medidas = parsearMedidasANumeros(prod.NOMPROD);
+      if (medidas) {
+        const diferenciaAncho = Math.abs(medidas.ancho - anchoTarget);
+        const diferenciaLargo = Math.abs(medidas.largo - largoTarget);
+        const diferenciaTotal = diferenciaAncho + diferenciaLargo;
+
+        if (diferenciaTotal < menorDiferencia) {
+          menorDiferencia = diferenciaTotal;
+          mejorMatch = prod;
+        }
+      }
+    }
+
+    return mejorMatch;
+  } catch (error) {
+    console.error("Error buscando medida cercana:", error);
+    return null;
+  }
 }
 
 // Función para extraer medidas específicas de frases - EXTRA ROBUSTA
@@ -207,8 +279,22 @@ const precioTool = new DynamicStructuredTool({
       let condicionesBusqueda;
       let parametrosBusqueda;
       
+      // INTELIGENCIA MEJORADA: Buscar por similitud numérica para medidas
       if (tieneMedidasEspecificas) {
-        // Búsqueda específica para medidas - usar OR para permitir coincidencias con cualquier término expandido
+        // Intentar extraer medidas numéricas para búsqueda inteligente
+        const medidaExtraida = extraerMedidasDeFrase(producto);
+        if (medidaExtraida) {
+          const medidas = parsearMedidasANumeros(medidaExtraida);
+          if (medidas) {
+            const productoMasCercano = await encontrarMedidaCercana(medidas.ancho, medidas.largo);
+            if (productoMasCercano) {
+              // Si encontramos una medida cercana, devolver solo ese producto
+              return `${productoMasCercano.NOMPROD}: $${parseInt(productoMasCercano.PRECIO).toLocaleString('es-CL')}`;
+            }
+          }
+        }
+        
+        // Si no se encuentra medida cercana, fallback a búsqueda por texto
         condicionesBusqueda = terminosExpandidos.map((_, index) => 
           `pt.NOMPROD LIKE '%' + @${index} + '%'`
         ).join(' OR ');
