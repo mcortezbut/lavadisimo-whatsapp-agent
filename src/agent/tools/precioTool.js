@@ -90,13 +90,27 @@ function normalizarMedidas(texto) {
   });
 }
 
-// Función para extraer medidas específicas de frases
+// Función para extraer medidas específicas de frases - MÁS ROBUSTA
 function extraerMedidasDeFrase(texto) {
-  // Patrones comunes en frases con medidas
+  // Patrones mejorados para detectar medidas en contexto conversacional
   const patrones = [
-    /(?:es|la|de|una)\s+(\d+(?:[.,]\d+)?)\s*[xX×]\s*(\d+(?:[.,]\d+)?)/i,
-    /(?:medidas?|tamaño)\s+(\d+(?:[.,]\d+)?)\s*[xX×]\s*(\d+(?:[.,]\d+)?)/i,
-    /(\d+(?:[.,]\d+)?)\s*[xX×]\s*(\d+(?:[.,]\d+)?)\s*(?:metros|m\.?)/i
+    // "la de 1,3 x 1,9" - el caso más común
+    /(?:la|el|de|una|un)\s+(\d+(?:[.,]\d+)?)\s*[xX×]\s*(\d+(?:[.,]\d+)?)/i,
+    
+    // "medida 1,3x1,9" o "tamaño 1.3x1.9"
+    /(?:medidas?|tamaño|dimensiones?)\s+(\d+(?:[.,]\d+)?)\s*[xX×]\s*(\d+(?:[.,]\d+)?)/i,
+    
+    // "1,3 x 1,9 metros" o "1.3x1.9 m"
+    /(\d+(?:[.,]\d+)?)\s*[xX×]\s*(\d+(?:[.,]\d+)?)\s*(?:metros|m\.?)/i,
+    
+    // "cuanto vale 1,3x1,9" (sin contexto previo)
+    /(?:cuanto|cual|precio|valor)\s+(?:vale|es|de|para)\s+(\d+(?:[.,]\d+)?)\s*[xX×]\s*(\d+(?:[.,]\d+)?)/i,
+    
+    // Solo medidas al final de la frase "quiero una alfombra 1,3x1,9"
+    /(\d+(?:[.,]\d+)?)\s*[xX×]\s*(\d+(?:[.,]\d+)?)$/i,
+    
+    // Medidas al inicio "1,3x1,9 cuanto vale"
+    /^(\d+(?:[.,]\d+)?)\s*[xX×]\s*(\d+(?:[.,]\d+)?)/i
   ];
   
   for (const patron of patrones) {
