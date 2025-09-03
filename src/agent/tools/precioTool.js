@@ -128,16 +128,16 @@ function parsearMedidasANumeros(medidaStr) {
   return null;
 }
 
-// Función para encontrar la medida más cercana en la base de datos
+// Función para encontrar la medida más cercana en la base de datos con timeout
 async function encontrarMedidaCercana(anchoTarget, largoTarget) {
   try {
     if (!datasource.isInitialized) {
       await datasource.initialize();
     }
 
-    // Obtener todas las alfombras con medidas
+    // Obtener alfombras con medidas (limitado para performance)
     const productos = await datasource.query(`
-      SELECT pt.NOMPROD, pt.PRECIO
+      SELECT TOP 20 pt.NOMPROD, pt.PRECIO
       FROM PRODUCTOS pt
       INNER JOIN (SELECT idprod, MAX(fechaupdate) AS maxdate FROM productos WHERE idusuario = 'lavadisimo' GROUP BY idprod) mt
       ON pt.FECHAUPDATE = mt.maxdate AND pt.IDPROD = mt.IDPROD
@@ -156,16 +156,21 @@ async function encontrarMedidaCercana(anchoTarget, largoTarget) {
         const diferenciaLargo = Math.abs(medidas.largo - largoTarget);
         const diferenciaTotal = diferenciaAncho + diferenciaLargo;
 
-        if (diferenciaTotal < menorDiferencia) {
+        // Preferir coincidencias exactas o muy cercanas (diferencia < 0.5)
+        if (diferenciaTotal < menorDiferencia || (diferenciaTotal < 0.5 && menorDiferencia >= 0.5)) {
           menorDiferencia = diferenciaTotal;
           mejorMatch = prod;
         }
       }
     }
 
-    return mejorMatch;
+    // Solo devolver si la diferencia es pequeña (menos de 1.0 en total)
+    if (mejorMatch && menorDiferencia < 1.0) {
+      return mejorMatch;
+    }
+    return null;
   } catch (error) {
-    console.error("Error buscando medida cercana:", error);
+    console.error("Error en búsqueda de medida cercana:", error);
     return null;
   }
 }
@@ -294,11 +299,32 @@ const precioTool = new DynamicStructuredTool({
           }
         }
         
-        // Si no se encuentra medida cercana, fallback a búsqueda por texto
-        condicionesBusqueda = terminosExpandidos.map((_, index) => 
-          `pt.NOMPROD LIKE '%' + @${index} + '%'`
-        ).join(' OR ');
-        parametrosBusqueda = terminosExpandidos;
+        // Si no se encuentra medida cercana, buscar productos generales de alfombra
+        // en lugar de hacer búsqueda por texto con las medidas (para evitar inventar productos)
+        const productosGenerales = await datasource.query(`
+          SELECT TOP 5
+            pt.NOMPROD, 
+            pt.PRECIO,
+            c.NOMCAT as CATEGORIA
+          FROM PRODUCTOS pt
+          INNER JOIN (SELECT idprod, MAX(fechaupdate) AS maxdate FROM productos WHERE idusuario = 'lavadisimo' GROUP BY idprod) mt
+          ON pt.FECHAUPDATE = mt.maxdate AND pt.IDPROD = mt.IDPROD
+          LEFT JOIN CATEGORIAS c ON pt.IDGRUPO = c.IDGRUPO
+          WHERE pt.NULO = 0 AND pt.IDUSUARIO = 'lavadisimo'
+            AND pt.NOMPROD LIKE '%alfombra%'
+          ORDER BY pt.PRECIO
+        `);
+
+        if (productosGenerales.length > 0) {
+          let respuesta = `No encontré una alfombra con medidas cercanas a ${medidaExtraida}. ¿Te interesa alguna de estas opciones?\n\n`;
+          productosGenerales.forEach((prod, index) => {
+            respuesta += `${index + 1}. ${prod.NOMPROD}: $${parseInt(prod.PRECIO).toLocaleString('es-CL')}\n`;
+          });
+          respuesta += `\nPuedes especificar las medidas exactas que necesitas.`;
+          return respuesta;
+        }
+
+        return `No encontré alfombras con medidas cercanas a ${medidaExtraida}. ¿Podrías especificar otras medidas o consultar nuestros servicios generales de alfombra?`;
       } else {
         // Búsqueda general - usar OR para términos expandidos
         condicionesBusqueda = terminosExpandidos.map((_, index) => 
