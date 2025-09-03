@@ -76,17 +76,12 @@ const sinonimos = {
   "grande": ["TALLA L"],
   "extra grande": ["XL"],
   
-  // Vehículos y automóviles
-  "coche": ["SEDAN", "SUV", "VAN", "PICK UP", "CITYCAR"],
-  "auto": ["SEDAN", "SUV", "VAN", "PICK UP", "CITYCAR"],
-  "vehículo": ["SEDAN", "SUV", "VAN", "PICK UP", "CITYCAR"],
-  "carro": ["SEDAN", "SUV", "VAN", "PICK UP", "CITYCAR"],
-  "sedan": ["SEDAN"],
-  "suv": ["SUV"],
-  "van": ["VAN"],
-  "pickup": ["PICK UP"],
-  "camioneta": ["PICK UP"],
-  "citycar": ["CITYCAR"]
+  // Coche bebé (carrito de bebé)
+  "coche": ["COCHE"],
+  "coche bebé": ["COCHE"],
+  "carrito": ["COCHE"],
+  "carrito de bebé": ["COCHE"],
+  "cochecito": ["COCHE"]
 };
 
 // Función para normalizar medidas (2x3 → 2 M. X 3 M.)
@@ -141,7 +136,7 @@ function extraerMedidasDeFrase(texto) {
 }
 
 // Función para expandir términos de búsqueda
-function expandirBusqueda(termino) {
+export function expandirBusqueda(termino) {
   let terminoNormalizado = normalizarMedidas(termino);
   const terminoLower = terminoNormalizado.toLowerCase().trim();
   
