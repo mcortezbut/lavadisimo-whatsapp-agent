@@ -200,10 +200,10 @@ const precioTool = new DynamicStructuredTool({
       let parametrosBusqueda;
       
       if (tieneMedidasEspecificas) {
-        // Búsqueda específica para medidas - mostrar solo coincidencias exactas o muy cercanas
+        // Búsqueda específica para medidas - usar OR para permitir coincidencias con cualquier término expandido
         condicionesBusqueda = terminosExpandidos.map((_, index) => 
           `pt.NOMPROD LIKE '%' + @${index} + '%'`
-        ).join(' AND ');
+        ).join(' OR ');
         parametrosBusqueda = terminosExpandidos;
       } else {
         // Búsqueda general - usar OR para términos expandidos
@@ -222,13 +222,14 @@ const precioTool = new DynamicStructuredTool({
       `;
       
       if (tieneMedidasEspecificas) {
-        // Para medidas específicas, priorizar coincidencias exactas
+        // Para medidas específicas, priorizar productos que contengan medidas
         ordenamiento = `
           ORDER BY 
             CASE 
-              WHEN pt.NOMPROD LIKE '%${terminosExpandidos.join('%')}%' THEN 1
+              WHEN pt.NOMPROD LIKE '% M. X % M.%' THEN 1
               ELSE 2 
             END,
+            CASE WHEN pt.NOMPROD LIKE @0 + '%' THEN 1 ELSE 2 END,
             LEN(pt.NOMPROD),
             pt.PRECIO
         `;

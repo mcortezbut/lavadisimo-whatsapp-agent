@@ -26,39 +26,63 @@ async function checkAlfombra2x3() {
   try {
     console.log('🔌 Conectando a la base de datos...');
     await datasource.initialize();
-    console.log('✅ Conexión exitosa\n');
+    console.log('✅ Conexión exitosa');
 
-    // Verificar si existe alfombra 2x3 en la base de datos
-    const resultado = await datasource.query(`
-      SELECT NOMPROD, PRECIO 
-      FROM PRODUCTOS 
-      WHERE NOMPROD LIKE '%2 M. X 3 M.%' 
-        AND IDUSUARIO = 'lavadisimo' 
-        AND NULO = 0
+    // Buscar específicamente alfombra 2x3 o variaciones
+    const searchTerms = [
+      '2 M. X 3 M.',
+      '2X3',
+      '2 x 3',
+      '2,0 x 3,0',
+      '2.0 x 3.0',
+      '200 x 300',
+      '2 metros x 3 metros'
+    ];
+
+    for (const term of searchTerms) {
+      console.log(`\n🔍 Buscando: "${term}"`);
+      
+      const results = await datasource.query(`
+        SELECT pt.NOMPROD, pt.PRECIO
+        FROM PRODUCTOS pt
+        INNER JOIN (SELECT idprod, MAX(fechaupdate) AS maxdate FROM productos WHERE idusuario = 'lavadisimo' GROUP BY idprod) mt
+        ON pt.FECHAUPDATE = mt.maxdate AND pt.IDPROD = mt.IDPROD
+        WHERE pt.NULO = 0 AND pt.IDUSUARIO = 'lavadisimo'
+          AND pt.NOMPROD LIKE '%' + @0 + '%'
+        ORDER BY pt.NOMPROD
+      `, [term]);
+
+      if (results.length > 0) {
+        console.log(`✅ Encontrados ${results.length} resultados:`);
+        results.forEach((prod, index) => {
+          console.log(`${index + 1}. ${prod.NOMPROD} - $${parseInt(prod.PRECIO).toLocaleString('es-CL')}`);
+        });
+      } else {
+        console.log('❌ No se encontraron resultados');
+      }
+    }
+
+    // Verificar todas las alfombras disponibles
+    console.log('\n📋 Listando todas las alfombras disponibles:');
+    const allAlfombras = await datasource.query(`
+      SELECT pt.NOMPROD, pt.PRECIO
+      FROM PRODUCTOS pt
+      INNER JOIN (SELECT idprod, MAX(fechaupdate) AS maxdate FROM productos WHERE idusuario = 'lavadisimo' GROUP BY idprod) mt
+      ON pt.FECHAUPDATE = mt.maxdate AND pt.IDPROD = mt.IDPROD
+      WHERE pt.NULO = 0 AND pt.IDUSUARIO = 'lavadisimo'
+        AND pt.NOMPROD LIKE '%ALFOMBRA%'
+      ORDER BY pt.PRECIO
     `);
-    
-    console.log('Resultados para alfombra 2 M. X 3 M.:');
-    console.log(resultado);
-    
-    // Verificar todas las alfombras que contengan '2' y '3'
-    const todasAlfombras = await datasource.query(`
-      SELECT NOMPROD, PRECIO 
-      FROM PRODUCTOS 
-      WHERE NOMPROD LIKE '%ALFOMBRA%' 
-        AND (NOMPROD LIKE '%2%' OR NOMPROD LIKE '%3%')
-        AND IDUSUARIO = 'lavadisimo' 
-        AND NULO = 0
-      ORDER BY NOMPROD
-    `);
-    
-    console.log('\nTodas las alfombras con 2 o 3:');
-    todasAlfombras.forEach((prod, index) => {
+
+    console.log(`📊 Total de alfombras: ${allAlfombras.length}`);
+    allAlfombras.forEach((prod, index) => {
       console.log(`${index + 1}. ${prod.NOMPROD} - $${parseInt(prod.PRECIO).toLocaleString('es-CL')}`);
     });
-    
+
     await datasource.destroy();
+    console.log('🔌 Conexión cerrada');
   } catch (error) {
-    console.error('Error:', error.message);
+    console.error('❌ Error:', error.message);
   }
 }
 
