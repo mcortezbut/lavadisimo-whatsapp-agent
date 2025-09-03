@@ -53,19 +53,32 @@ function extraerMedidasPrecisas(texto) {
 
 // Función para extraer medidas de nombres de productos (ej: "ALFOMBRA 1,6 M. X 2,3 M." o "ALFOMBRA 2 M. X 3 M.")
 function extraerMedidasDeProducto(nombreProducto) {
-  const patron = /(\d+[.,]?\d*)\s*[Mm]?\.?\s*[xX×]\s*(\d+[.,]?\d*)\s*[Mm]?\.?/i;
+  if (!nombreProducto || typeof nombreProducto !== 'string') {
+    return null;
+  }
+  
+  const patron = /(\d+[.,]?\d*)\s*(?:[Mm]\.?)?\s*[xX×]\s*(\d+[.,]?\d*)\s*(?:[Mm]\.?)?/i;
   const match = nombreProducto.match(patron);
-  if (match) {
-    const ancho = parseFloat(match[1].replace(',', '.'));
-    const largo = parseFloat(match[3].replace(',', '.'));
-    return { ancho, largo };
+  
+  if (match && match[1] && match[2]) {
+    try {
+      const ancho = parseFloat(match[1].replace(',', '.'));
+      const largo = parseFloat(match[2].replace(',', '.'));
+      
+      // Verificar que los valores son números válidos
+      if (!isNaN(ancho) && !isNaN(largo)) {
+        return { ancho, largo };
+      }
+    } catch (error) {
+      console.error("Error parsing measures:", error);
+    }
   }
   return null;
 }
 
 // Función para verificar si el nombre del producto ya contiene medidas
 function nombreContieneMedidas(nombre) {
-  return /(\d+[.,]?\d*)\s*[Mm]?\.?\s*[xX×]\s*(\d+[.,]?\d*)\s*[Mm]?\.?/i.test(nombre);
+  return /(\d+[.,]?\d*)\s*(?:[Mm]\.?)?\s*[xX×]\s*(\d+[.,]?\d*)\s*(?:[Mm]\.?)?/i.test(nombre);
 }
 
 // Función para calcular diferencia numérica entre medidas
