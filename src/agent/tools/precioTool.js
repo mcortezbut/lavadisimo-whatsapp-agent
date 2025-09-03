@@ -90,30 +90,33 @@ function normalizarMedidas(texto) {
   });
 }
 
-// Función para extraer medidas específicas de frases - MÁS ROBUSTA
+// Función para extraer medidas específicas de frases - EXTRA ROBUSTA
 function extraerMedidasDeFrase(texto) {
-  // Patrones mejorados para detectar medidas en contexto conversacional
-  const patrones = [
-    // "la de 1,3 x 1,9" - el caso más común
-    /(?:la|el|de|una|un)\s+(\d+(?:[.,]\d+)?)\s*[xX×]\s*(\d+(?:[.,]\d+)?)/i,
+  // Primero, intentar encontrar cualquier patrón de medidas en el texto
+  const patronGeneral = /(\d+(?:[.,]\d+)?)\s*[xX×]\s*(\d+(?:[.,]\d+)?)/g;
+  const matches = [...texto.matchAll(patronGeneral)];
+  
+  if (matches.length > 0) {
+    // Tomar la primera coincidencia de medidas
+    const match = matches[0];
+    const ancho = match[1].replace('.', ',');
+    const largo = match[2].replace('.', ',');
+    return `${ancho} M. X ${largo} M.`;
+  }
+  
+  // Si no se encuentra con el patrón general, intentar con patrones contextuales
+  const patronesContextuales = [
+    // "la de 1,3 x 1,9" - incluso con palabras intermedias
+    /(?:la|el|de|una|un).*?(\d+(?:[.,]\d+)?)\s*[xX×]\s*(\d+(?:[.,]\d+)?)/i,
     
-    // "medida 1,3x1,9" o "tamaño 1.3x1.9"
-    /(?:medidas?|tamaño|dimensiones?)\s+(\d+(?:[.,]\d+)?)\s*[xX×]\s*(\d+(?:[.,]\d+)?)/i,
+    // "medida 1,3x1,9" o "tamaño 1.3x1.9" con palabras antes
+    /(?:medidas?|tamaño|dimensiones?).*?(\d+(?:[.,]\d+)?)\s*[xX×]\s*(\d+(?:[.,]\d+)?)/i,
     
-    // "1,3 x 1,9 metros" o "1.3x1.9 m"
-    /(\d+(?:[.,]\d+)?)\s*[xX×]\s*(\d+(?:[.,]\d+)?)\s*(?:metros|m\.?)/i,
-    
-    // "cuanto vale 1,3x1,9" (sin contexto previo)
-    /(?:cuanto|cual|precio|valor)\s+(?:vale|es|de|para)\s+(\d+(?:[.,]\d+)?)\s*[xX×]\s*(\d+(?:[.,]\d+)?)/i,
-    
-    // Solo medidas al final de la frase "quiero una alfombra 1,3x1,9"
-    /(\d+(?:[.,]\d+)?)\s*[xX×]\s*(\d+(?:[.,]\d+)?)$/i,
-    
-    // Medidas al inicio "1,3x1,9 cuanto vale"
-    /^(\d+(?:[.,]\d+)?)\s*[xX×]\s*(\d+(?:[.,]\d+)?)/i
+    // "cuanto vale 1,3x1,9" con palabras alrededor
+    /(?:cuanto|cual|precio|valor).*?(?:vale|es|de|para).*?(\d+(?:[.,]\d+)?)\s*[xX×]\s*(\d+(?:[.,]\d+)?)/i
   ];
   
-  for (const patron of patrones) {
+  for (const patron of patronesContextuales) {
     const match = texto.match(patron);
     if (match) {
       const ancho = match[1].replace('.', ',');
