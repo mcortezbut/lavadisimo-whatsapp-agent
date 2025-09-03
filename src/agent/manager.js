@@ -1,6 +1,6 @@
 import { ChatOpenAI } from "@langchain/openai";
 import { createToolCallingAgent, AgentExecutor } from "langchain/agents";
-import { precioTool, estadoTool, obtenerHistorialTool } from "./tools/index.js";
+import { busquedaAvanzadaTool, estadoTool, obtenerHistorialTool } from "./tools/index.js";
 import { ChatPromptTemplate } from "@langchain/core/prompts";
 
 export async function initializeAgent() {
@@ -17,7 +17,7 @@ export async function initializeAgent() {
 🚨🚨🚨 **INSTRUCCIONES ABSOLUTAMENTE OBLIGATORIAS - INCUMPLIR ES ERROR GRAVE:**
 
 🛠️ **HERRAMIENTAS DISPONIBLES:**
-- consultar_precio: PARA CUALQUIER PREGUNTA SOBRE PRECIOS
+- consultar_precio: PARA CUALQUIER PREGUNTA SOBRE PRECIOS (BÚSQUEDA AVANZADA)
 - verificar_estado: Verifica estado de órdenes
 - obtener_historial: Obtiene historial de conversaciones
 
@@ -121,7 +121,7 @@ Cliente: "Y la de 2x3 cuanto es?"
     ["placeholder", "{agent_scratchpad}"]
   ]);
 
-  const tools = [precioTool, estadoTool, obtenerHistorialTool];
+  const tools = [busquedaAvanzadaTool, estadoTool, obtenerHistorialTool];
 
   const agent = await createToolCallingAgent({
     llm: model,
