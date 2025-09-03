@@ -74,7 +74,19 @@ const sinonimos = {
   "pequeña": ["TALLA S"],
   "mediana": ["TALLA M"],
   "grande": ["TALLA L"],
-  "extra grande": ["XL"]
+  "extra grande": ["XL"],
+  
+  // Vehículos y automóviles
+  "coche": ["SEDAN", "SUV", "VAN", "PICK UP", "CITYCAR"],
+  "auto": ["SEDAN", "SUV", "VAN", "PICK UP", "CITYCAR"],
+  "vehículo": ["SEDAN", "SUV", "VAN", "PICK UP", "CITYCAR"],
+  "carro": ["SEDAN", "SUV", "VAN", "PICK UP", "CITYCAR"],
+  "sedan": ["SEDAN"],
+  "suv": ["SUV"],
+  "van": ["VAN"],
+  "pickup": ["PICK UP"],
+  "camioneta": ["PICK UP"],
+  "citycar": ["CITYCAR"]
 };
 
 // Función para normalizar medidas (2x3 → 2 M. X 3 M.)
