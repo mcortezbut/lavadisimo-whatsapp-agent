@@ -188,6 +188,20 @@ const precisionSearchTool = new DynamicStructuredTool({
       const resultados = await busquedaInteligente(producto);
 
       if (resultados.length === 0) {
+        // If no results, but it's an alfombra search, show all alfombra options
+        if (producto.toLowerCase().includes('alfombra')) {
+          const alfombras = await buscarPorCategoria('alfombra', 10);
+          if (alfombras.length > 0) {
+            let respuesta = `No encontré la medida exacta, pero tenemos estas opciones de alfombras:\n\n`;
+            alfombras.forEach((prod, index) => {
+              const medidas = extraerMedidasDeProducto(prod.NOMPROD);
+              const infoMedidas = medidas ? ` (${medidas.ancho} x ${medidas.largo} m)` : '';
+              respuesta += `${index + 1}. ${prod.NOMPROD}: $${parseInt(prod.PRECIO).toLocaleString('es-CL')}${infoMedidas}\n`;
+            });
+            respuesta += `\n¿Te interesa alguna de estas?`;
+            return respuesta;
+          }
+        }
         return `No encontré servicios que coincidan con "${producto}". ¿Podrías ser más específico? Por ejemplo: "alfombra 2x3", "cortina mediana", etc.`;
       }
 
