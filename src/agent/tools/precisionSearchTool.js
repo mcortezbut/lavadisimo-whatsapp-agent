@@ -124,6 +124,99 @@ function calcularDiferencia(medidas1, medidas2) {
   return diffAncho + diffLargo;
 }
 
+// Función para extraer términos de variante (tamaño, material, etc.) desde la consulta
+function extraerVariantesDeConsulta(consulta) {
+  const consultaLower = consulta.toLowerCase();
+  const variantes = {
+    tamanos: [],
+    materiales: [],
+    atributos: []
+  };
+
+  // Extraer tamaños
+  const patronesTamanos = [
+    /\b(chica|pequeña|small|s)\b/i,
+    /\b(mediana|media|medium|m)\b/i,
+    /\b(grande|large|l|xl)\b/i,
+    /\b(extra grande|extra grande|xxl)\b/i
+  ];
+  
+  patronesTamanos.forEach(patron => {
+    const match = consultaLower.match(patron);
+    if (match) {
+      variantes.tamanos.push(match[0]);
+    }
+  });
+
+  // Extraer materiales
+  const patronesMateriales = [
+    /\b(sintético|sintetica|poliester|polyester)\b/i,
+    /\b(pluma|plumas|feather|down)\b/i,
+    /\b(seda|silk|satén|saten)\b/i,
+    /\b(lana|wool)\b/i
+  ];
+  
+  patronesMateriales.forEach(patron => {
+    const match = consultaLower.match(patron);
+    if (match) {
+      variantes.materiales.push(match[0]);
+    }
+  });
+
+  // Extraer atributos
+  const patronesAtributos = [
+    /\b(extra|especial|premium|deluxe)\b/i,
+    /\b(simple|básico|basico|standard)\b/i,
+    /\b(doble|double|king|queen)\b/i
+  ];
+  
+  patronesAtributos.forEach(patron => {
+    const match = consultaLower.match(patron);
+    if (match) {
+      variantes.atributos.push(match[0]);
+    }
+  });
+
+  return variantes;
+}
+
+// Función para filtrar productos por variantes extraídas de la consulta
+function filtrarPorVariantes(productos, variantes) {
+  if (variantes.tamanos.length === 0 && variantes.materiales.length === 0 && variantes.atributos.length === 0) {
+    return productos;
+  }
+
+  return productos.filter(producto => {
+    const nombreLower = producto.NOMPROD.toLowerCase();
+    
+    // Verificar si coincide con algún tamaño especificado
+    if (variantes.tamanos.length > 0) {
+      const coincideTamano = variantes.tamanos.some(tamano => 
+        nombreLower.includes(tamano.toLowerCase())
+      );
+      if (!coincideTamano) return false;
+    }
+    
+    // Verificar si coincide con algún material especificado
+    if (variantes.materiales.length > 0) {
+      const coincideMaterial = variantes.materiales.some(material => 
+        nombreLower.includes(material.toLowerCase())
+      );
+      if (!coincideMaterial) return false;
+    }
+    
+    // Verificar si coincide con algún atributo especificado
+    if (variantes.atributos.length > 0) {
+      const coincideAtributo = variantes.atributos.some(atributo => 
+        nombreLower.includes(atributo.toLowerCase())
+      );
+      if (!coincideAtributo) return false;
+    }
+    
+    return true;
+  });
+}
+
 // Función para detectar variantes en una lista de productos
 function detectarVariantes(productos) {
   const nombres = productos.map(p => p.NOMPROD);
@@ -178,7 +271,7 @@ function detectarVariantes(productos) {
   );
   
   if (tienenAtributos) {
-    return { tipo: "atributo", mensaje: "¿Prefieres versión simple o extra? Tenemos opciones con y sin relleno adicional." };
+    return { tipo: "atributo", mensaje: "¿Prefieres versión simple or extra? Tenemos opciones con y sin relleno adicional." };
   }
   
   // Detectar tipos específicos de productos
@@ -230,22 +323,32 @@ async function obtenerCategoriasDisponibles() {
     // Mapear nombres de categorías a versiones más descriptivas y user-friendly
     const categoriasMejoradas = categorias.map(cat => {
       const nombre = cat.NOMCAT;
+      const nombreLower = nombre.toLowerCase().trim();
       
-      // Mejorar nombres específicos
-      if (nombre.toLowerCase() === 'muro a muro') {
+      // Mejorar nombres específicos con coincidencia insensible a mayúsculas y espacios
+      if (nombreLower.includes('muro') || nombreLower === 'muro a muro') {
         return 'alfombras muro a muro (limpieza de pisos de habitaciones y salones)';
       }
-      if (nombre.toLowerCase() === 'otros') {
+      if (nombreLower === 'otros') {
         return null; // Excluir "otros" de la lista principal
       }
-      if (nombre.toLowerCase() === 'cortinas y visillos') {
+      if (nombreLower.includes('cortina') || nombreLower.includes('visillo')) {
         return 'cortinas';
       }
-      if (nombre.toLowerCase() === 'telas y vestuario') {
+      if (nombreLower.includes('tela') || nombreLower.includes('vestuario') || nombreLower.includes('ropa')) {
         return 'ropa y vestuario';
       }
-      if (nombre.toLowerCase() === 'sofás y sillas') {
+      if (nombreLower.includes('sofá') || nombreLower.includes('silla') || nombreLower.includes('butaca') || nombreLower.includes('poltrona') || nombreLower.includes('mueble')) {
         return 'muebles (sofás, sillas, poltronas)';
+      }
+      if (nombreLower.includes('alfombra')) {
+        return 'alfombras';
+      }
+      if (nombreLower.includes('vehículo') || nombreLower.includes('auto') || nombreLower.includes('coche')) {
+        return 'vehículos';
+      }
+      if (nombreLower.includes('ropa de cama') || nombreLower.includes('colchón') || nombreLower.includes('almohada') || nombreLower.includes('cobertor')) {
+        return nombre; // Mantener estos nombres como están
       }
       
       return nombre;
@@ -426,7 +529,27 @@ const precisionSearchTool = new DynamicStructuredTool({
 
       const resultados = await busquedaInteligente(producto);
 
-      if (resultados.length === 0) {
+      // Extraer variantes de la consulta (tamaños, materiales, etc.)
+      const variantesConsulta = extraerVariantesDeConsulta(producto);
+      
+      // Si se especificaron variantes en la consulta, filtrar los resultados
+      let resultadosFiltrados = resultados;
+      if (variantesConsulta.tamanos.length > 0 || variantesConsulta.materiales.length > 0 || variantesConsulta.atributos.length > 0) {
+          resultadosFiltrados = filtrarPorVariantes(resultados, variantesConsulta);
+      }
+
+      if (resultadosFiltrados.length === 0) {
+        // Si no hay resultados después de filtrar, mostrar opciones originales pero mencionando que no hay coincidencia con las variantes
+        if (resultados.length > 0) {
+          let respuesta = `No encontré "${producto}" exactamente, pero tenemos estas opciones:\n\n`;
+          resultados.forEach((prod, index) => {
+            const medidasProd = extraerMedidasDeProducto(prod.NOMPROD);
+            const infoMedidas = medidasProd ? ` (${medidasProd.ancho} x ${medidasProd.largo} m)` : '';
+            respuesta += `${index + 1}. ${prod.NOMPROD}: ${formatearPrecio(prod.PRECIO)}${infoMedidas}\n`;
+          });
+          respuesta += `\n¿Te interesa alguna de estas?`;
+          return respuesta;
+        }
         // If no results, but it's an alfombra search or measures were provided, show all alfombra options
         if (medidasInput || producto.toLowerCase().includes('alfombra')) {
           const alfombras = await buscarPorCategoria('alfombra');
@@ -450,8 +573,8 @@ const precisionSearchTool = new DynamicStructuredTool({
         return `No encontré servicios que coincidan con "${producto}". ¿Podrías ser más específico? Por ejemplo: "alfombra 2x3", "cortina mediana", etc.`;
       }
 
-      if (resultados.length === 1) {
-        const prod = resultados[0];
+      if (resultadosFiltrados.length === 1) {
+        const prod = resultadosFiltrados[0];
         const precioFormateado = formatearPrecio(prod.PRECIO);
         return `${prod.NOMPROD}: ${precioFormateado}`;
       }
@@ -460,7 +583,7 @@ const precisionSearchTool = new DynamicStructuredTool({
       if (medidasInput) {
         // Medidas proporcionadas pero no coincidencia exacta, mostrar opciones disponibles
         let respuesta = `No encontré una alfombra exactamente de ${medidasInput.ancho} x ${medidasInput.largo} metros, pero tenemos estas opciones:\n\n`;
-        resultados.forEach((prod, index) => {
+        resultadosFiltrados.forEach((prod, index) => {
           const medidasProd = extraerMedidasDeProducto(prod.NOMPROD);
           const infoMedidas = medidasProd ? ` (${medidasProd.ancho} x ${medidasProd.largo} m)` : '';
           respuesta += `${index + 1}. ${prod.NOMPROD}: ${formatearPrecio(prod.PRECIO)}${infoMedidas}\n`;
@@ -468,9 +591,20 @@ const precisionSearchTool = new DynamicStructuredTool({
         respuesta += `\n¿Te interesa alguna de estas?`;
         return respuesta;
       } else {
-        // No se proporcionaron medidas, detectar variantes
-        const variante = detectarVariantes(resultados);
-        return variante.mensaje;
+        // No se proporcionaron medidas, detectar variantes pero solo si no se especificaron en la consulta
+        if (variantesConsulta.tamanos.length > 0 || variantesConsulta.materiales.length > 0 || variantesConsulta.atributos.length > 0) {
+          // Variantes ya especificadas, mostrar opciones filtradas
+          let respuesta = `Tenemos estas opciones para "${producto}":\n\n`;
+          resultadosFiltrados.forEach((prod, index) => {
+            respuesta += `${index + 1}. ${prod.NOMPROD}: ${formatearPrecio(prod.PRECIO)}\n`;
+          });
+          respuesta += `\n¿Te interesa alguna de estas?`;
+          return respuesta;
+        } else {
+          // No variantes especificadas, detectar y preguntar
+          const variante = detectarVariantes(resultadosFiltrados);
+          return variante.mensaje;
+        }
       }
 
     } catch (error) {
