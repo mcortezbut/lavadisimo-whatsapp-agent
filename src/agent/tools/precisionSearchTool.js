@@ -62,8 +62,14 @@ function extraerMedidasDeProducto(nombreProducto) {
   
   if (match && match[1] && match[2]) {
     try {
-      const ancho = parseFloat(match[1].replace(',', '.'));
-      const largo = parseFloat(match[2].replace(',', '.'));
+      const anchoStr = match[1];
+      const largoStr = match[2];
+      // Verificación adicional por si acaso
+      if (!anchoStr || !largoStr) {
+        return null;
+      }
+      const ancho = parseFloat(anchoStr.replace(',', '.'));
+      const largo = parseFloat(largoStr.replace(',', '.'));
       
       // Verificar que los valores son números válidos
       if (!isNaN(ancho) && !isNaN(largo)) {
@@ -87,6 +93,59 @@ function calcularDiferencia(medidas1, medidas2) {
   const diffAncho = Math.abs(medidas1.ancho - medidas2.ancho);
   const diffLargo = Math.abs(medidas1.largo - medidas2.largo);
   return diffAncho + diffLargo;
+}
+
+// Función para detectar variantes en una lista de productos
+function detectarVariantes(productos) {
+  const nombres = productos.map(p => p.NOMPROD);
+  
+  // Detectar si hay medidas en los nombres
+  const tienenMedidas = nombres.some(nombre => extraerMedidasDeProducto(nombre));
+  if (tienenMedidas) {
+    return { tipo: "medida", mensaje: "¿Podrías especificar las medidas? Por ejemplo: 0,6 x 1,10" };
+  }
+  
+  // Detectar tamaños (chica, mediana, grande, etc.)
+  const patronesTamanos = [
+    /\b(chica|pequeña|small|s)\b/i,
+    /\b(mediana|media|medium|m)\b/i,
+    /\b(grande|large|l|xl)\b/i,
+    /\b(extra grande|extra grande|xxl)\b/i
+  ];
+  
+  const tienenTamanos = nombres.some(nombre => 
+    patronesTamanos.some(patron => patron.test(nombre))
+  );
+  
+  if (tienenTamanos) {
+    return { tipo: "tamaño", mensaje: "¿Qué tamaño necesitas? (chica, mediana, grande)" };
+  }
+  
+  // Detectar colores
+  const coloresComunes = ['rojo', 'azul', 'verde', 'negro', 'blanco', 'amarillo', 'rosa', 'morado', 'gris', 'marron', 'beige'];
+  const tienenColores = nombres.some(nombre => 
+    coloresComunes.some(color => new RegExp(`\\b${color}\\b`, 'i').test(nombre))
+  );
+  
+  if (tienenColores) {
+    return { tipo: "color", mensaje: "¿De qué color lo prefieres?" };
+  }
+  
+  // Si no se detecta variante específica, devolver opciones generales
+  return { 
+    tipo: "opciones", 
+    mensaje: "Tenemos varias opciones disponibles. ¿Podrías darme más detalles sobre lo que necesitas?"
+  };
+}
+
+// Función para formatear precio correctamente
+function formatearPrecio(precio) {
+  // Asegurar que el precio sea un número
+  const precioNum = Number(precio);
+  if (isNaN(precioNum)) {
+    return precio; // Devolver original si no es número
+  }
+  return `$${precioNum.toLocaleString('es-CL')}`;
 }
 
 // Búsqueda por categoría principal
@@ -210,15 +269,8 @@ const precisionSearchTool = new DynamicStructuredTool({
         if (producto.toLowerCase().includes('alfombra')) {
           const alfombras = await buscarPorCategoria('alfombra', 10);
           if (alfombras.length > 0) {
-            let respuesta = `No encontré la medida exacta, pero tenemos estas opciones de alfombras:\n\n`;
-            alfombras.forEach((prod, index) => {
-              // Solo agregar medidas si el nombre no las contiene ya
-              const medidas = extraerMedidasDeProducto(prod.NOMPROD);
-              const infoMedidas = (medidas && !nombreContieneMedidas(prod.NOMPROD)) ? ` (${medidas.ancho} x ${medidas.largo} m)` : '';
-              respuesta += `${index + 1}. ${prod.NOMPROD}: $${parseInt(prod.PRECIO).toLocaleString('es-CL')}${infoMedidas}\n`;
-            });
-            respuesta += `\n¿Te interesa alguna de estas?`;
-            return respuesta;
+            const variante = detectarVariantes(alfombras);
+            return `No encontré exactamente lo que buscas, pero tenemos ${alfombras.length} opciones de alfombras. ${variante.mensaje}`;
           }
         }
         return `No encontré servicios que coincidan con "${producto}". ¿Podrías ser más específico? Por ejemplo: "alfombra 2x3", "cortina mediana", etc.`;
@@ -226,22 +278,13 @@ const precisionSearchTool = new DynamicStructuredTool({
 
       if (resultados.length === 1) {
         const prod = resultados[0];
-        return `${prod.NOMPROD}: $${parseInt(prod.PRECIO).toLocaleString('es-CL')}`;
+        const precioFormateado = formatearPrecio(prod.PRECIO);
+        return `${prod.NOMPROD}: ${precioFormateado}`;
       }
 
-      // Mostrar múltiples opciones
-      let respuesta = `Encontré ${resultados.length} opciones para "${producto}":\n\n`;
-      
-      resultados.forEach((prod, index) => {
-        // Solo agregar medidas si el nombre no las contiene ya
-        const medidas = extraerMedidasDeProducto(prod.NOMPROD);
-        const infoMedidas = (medidas && !nombreContieneMedidas(prod.NOMPROD)) ? ` (${medidas.ancho} x ${medidas.largo} m)` : '';
-        respuesta += `${index + 1}. ${prod.NOMPROD}: $${parseInt(prod.PRECIO).toLocaleString('es-CL')}${infoMedidas}\n`;
-      });
-
-      respuesta += `\n¿Cuál de estas opciones te interesa? Puedo darte más detalles.`;
-
-      return respuesta;
+      // Si hay múltiples resultados, detectar variantes y preguntar por detalles
+      const variante = detectarVariantes(resultados);
+      return variante.mensaje;
 
     } catch (error) {
       console.error("Error en precisionSearchTool:", error);
