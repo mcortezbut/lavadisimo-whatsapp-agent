@@ -143,20 +143,24 @@ function formatearPrecio(precio) {
   return `$${precioNum.toLocaleString('es-CL')}`;
 }
 
-// Búsqueda por categoría principal
-async function buscarPorCategoria(categoria, limite = 20) {
+// Búsqueda por categoría principal - SIN límites y con JOIN para evitar duplicados
+async function buscarPorCategoria(categoria) {
   try {
     const terminos = productCategories[categoria.toLowerCase()] || [categoria];
     
     const query = `
-      SELECT TOP ${limite}
-        IDPROD,
-        NOMPROD, 
-        PRECIO
-      FROM PRODUCTOS 
-      WHERE NULO = 0 AND IDUSUARIO = 'lavadisimo'
-        AND (${terminos.map((_, i) => `NOMPROD LIKE '%' + @${i} + '%'`).join(' OR ')})
-      ORDER BY NOMPROD
+      SELECT
+        pt.IDPROD,
+        pt.NOMPROD, 
+        pt.PRECIO,
+        c.NOMCAT as CATEGORIA
+      FROM PRODUCTOS pt
+      INNER JOIN (SELECT idprod, MAX(fechaupdate) AS maxdate FROM productos WHERE idusuario = 'lavadisimo' GROUP BY idprod) mt
+      ON pt.FECHAUPDATE = mt.maxdate AND pt.IDPROD = mt.IDPROD
+      LEFT JOIN CATEGORIAS c ON pt.IDGRUPO = c.IDGRUPO
+      WHERE pt.NULO = 0 AND pt.IDUSUARIO = 'lavadisimo'
+        AND (${terminos.map((_, i) => `pt.NOMPROD LIKE '%' + @${i} + '%'`).join(' OR ')})
+      ORDER BY pt.NOMPROD
     `;
 
     return await databaseManager.executeQuery(query, terminos);
@@ -169,7 +173,7 @@ async function buscarPorCategoria(categoria, limite = 20) {
 // Búsqueda exacta por medidas
 async function buscarPorMedidasExactas(medidasTarget, categoria = "alfombra") {
   try {
-    const productos = await buscarPorCategoria(categoria, 100);
+    const productos = await buscarPorCategoria(categoria);
     const productosConMedidas = [];
     
     // Primera pasada: buscar coincidencia exacta
@@ -198,51 +202,51 @@ async function buscarPorMedidasExactas(medidasTarget, categoria = "alfombra") {
       // Si no hay coincidencia cercana, devolver todas las opciones de la categoría
       return productos.filter(p => 
         p.NOMPROD.includes('ALFOMBRA')
-      ).slice(0, 5);
+      );
     }
 
-    return [];
+    return productos.filter(p => p.NOMPROD.includes('ALFOMBRA'));
   } catch (error) {
     console.error("Error en búsqueda por medidas:", error);
     return [];
   }
 }
 
-// Búsqueda general inteligente
-async function busquedaInteligente(termino) {
-  // Detectar si es una búsqueda con medidas
-  const medidas = extraerMedidasPrecisas(termino);
-  if (medidas) {
-    console.log(`📏 Búsqueda por medidas: ${medidas.ancho} x ${medidas.largo}`);
-    
-    // Determinar categoría basada en el término
-    let categoria = "alfombra";
-    const terminoLower = termino.toLowerCase();
-    
-    if (terminoLower.includes("cortina")) categoria = "cortina";
-    else if (terminoLower.includes("cobertor") || terminoLower.includes("frazada")) categoria = "cobertor";
-    
-    const resultados = await buscarPorMedidasExactas(medidas, categoria);
-    
-    if (resultados.length === 1) {
-      return resultados;
-    } else if (resultados.length > 1) {
-      // Si hay múltiples resultados cercanos, mostrar opciones
-      return resultados;
+  // Búsqueda general inteligente
+  async function busquedaInteligente(termino) {
+    // Detectar si es una búsqueda con medidas
+    const medidas = extraerMedidasPrecisas(termino);
+    if (medidas) {
+      console.log(`📏 Búsqueda por medidas: ${medidas.ancho} x ${medidas.largo}`);
+      
+      // Determinar categoría basada en el término
+      let categoria = "alfombra";
+      const terminoLower = termino.toLowerCase();
+      
+      if (terminoLower.includes("cortina")) categoria = "cortina";
+      else if (terminoLower.includes("cobertor") || terminoLower.includes("frazada")) categoria = "cobertor";
+      
+      const resultados = await buscarPorMedidasExactas(medidas, categoria);
+      
+      if (resultados.length === 1) {
+        return resultados;
+      } else if (resultados.length > 1) {
+        // Si hay múltiples resultados cercanos, mostrar opciones
+        return resultados;
+      }
     }
+    
+    // Búsqueda general por categoría
+    const terminoLower = termino.toLowerCase();
+    let categoria = Object.keys(productCategories).find(key => terminoLower.includes(key));
+    
+    if (!categoria) {
+      // Si no se encuentra categoría específica, buscar en alfombras por defecto
+      categoria = "alfombra";
+    }
+    
+    return await buscarPorCategoria(categoria);
   }
-  
-  // Búsqueda general por categoría
-  const terminoLower = termino.toLowerCase();
-  let categoria = Object.keys(productCategories).find(key => terminoLower.includes(key));
-  
-  if (!categoria) {
-    // Si no se encuentra categoría específica, buscar en alfombras por defecto
-    categoria = "alfombra";
-  }
-  
-  return await buscarPorCategoria(categoria, 10);
-}
 
 // Crear la herramienta de precisión
 const precisionSearchTool = new DynamicStructuredTool({
@@ -261,7 +265,7 @@ const precisionSearchTool = new DynamicStructuredTool({
       if (resultados.length === 0) {
         // If no results, but it's an alfombra search or measures were provided, show all alfombra options
         if (medidasInput || producto.toLowerCase().includes('alfombra')) {
-          const alfombras = await buscarPorCategoria('alfombra', 10);
+          const alfombras = await buscarPorCategoria('alfombra');
           if (alfombras.length > 0) {
             // Si se proporcionaron medidas, mostrar opciones con mensaje específico
             if (medidasInput) {
