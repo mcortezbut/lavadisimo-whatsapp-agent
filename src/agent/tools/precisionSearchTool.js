@@ -150,17 +150,13 @@ async function buscarPorCategoria(categoria, limite = 20) {
     
     const query = `
       SELECT TOP ${limite}
-        pt.IDPROD,
-        pt.NOMPROD, 
-        pt.PRECIO,
-        c.NOMCAT as CATEGORIA
-      FROM PRODUCTOS pt
-      INNER JOIN (SELECT idprod, MAX(fechaupdate) AS maxdate FROM productos WHERE idusuario = 'lavadisimo' GROUP BY idprod) mt
-      ON pt.FECHAUPDATE = mt.maxdate AND pt.IDPROD = mt.IDPROD
-      LEFT JOIN CATEGORIAS c ON pt.IDGRUPO = c.IDGRUPO
-      WHERE pt.NULO = 0 AND pt.IDUSUARIO = 'lavadisimo'
-        AND (${terminos.map((_, i) => `pt.NOMPROD LIKE '%' + @${i} + '%'`).join(' OR ')})
-      ORDER BY pt.NOMPROD
+        IDPROD,
+        NOMPROD, 
+        PRECIO
+      FROM PRODUCTOS 
+      WHERE NULO = 0 AND IDUSUARIO = 'lavadisimo'
+        AND (${terminos.map((_, i) => `NOMPROD LIKE '%' + @${i} + '%'`).join(' OR ')})
+      ORDER BY NOMPROD
     `;
 
     return await databaseManager.executeQuery(query, terminos);
