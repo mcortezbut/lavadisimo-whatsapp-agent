@@ -214,7 +214,7 @@ function formatearPrecio(precio) {
   return `$${precioNum.toLocaleString('es-CL')}`;
 }
 
-// Función para obtener todas las categorías disponibles de la base de datos
+// Función para obtener todas las categorías disponibles de la base de datos con nombres mejorados
 async function obtenerCategoriasDisponibles() {
   try {
     const query = `
@@ -226,11 +226,71 @@ async function obtenerCategoriasDisponibles() {
     `;
     
     const categorias = await databaseManager.executeQuery(query, []);
-    return categorias.map(cat => cat.NOMCAT);
+    
+    // Mapear nombres de categorías a versiones más descriptivas y user-friendly
+    const categoriasMejoradas = categorias.map(cat => {
+      const nombre = cat.NOMCAT;
+      
+      // Mejorar nombres específicos
+      if (nombre.toLowerCase() === 'muro a muro') {
+        return 'alfombras muro a muro (limpieza de pisos de habitaciones y salones)';
+      }
+      if (nombre.toLowerCase() === 'otros') {
+        return null; // Excluir "otros" de la lista principal
+      }
+      if (nombre.toLowerCase() === 'cortinas y visillos') {
+        return 'cortinas';
+      }
+      if (nombre.toLowerCase() === 'telas y vestuario') {
+        return 'ropa y vestuario';
+      }
+      if (nombre.toLowerCase() === 'sofás y sillas') {
+        return 'muebles (sofás, sillas, poltronas)';
+      }
+      
+      return nombre;
+    }).filter(cat => cat !== null); // Filtrar categorías excluidas
+
+    // Ordenar categorías: poner las más comunes primero
+    const ordenPreferido = [
+      'alfombras',
+      'alfombras muro a muro (limpieza de pisos de habitaciones y salones)',
+      'cortinas',
+      'ropa y vestuario',
+      'ropa de cama',
+      'colchones',
+      'muebles (sofás, sillas, poltronas)',
+      'vehículos'
+    ];
+
+    // Ordenar según el orden preferido
+    categoriasMejoradas.sort((a, b) => {
+      const indexA = ordenPreferido.findIndex(item => a.toLowerCase().includes(item.toLowerCase()));
+      const indexB = ordenPreferido.findIndex(item => b.toLowerCase().includes(item.toLowerCase()));
+      return (indexA === -1 ? 999 : indexA) - (indexB === -1 ? 999 : indexB);
+    });
+
+    // Añadir "otros servicios" al final si existe la categoría "otros"
+    const tieneOtros = categorias.some(cat => cat.NOMCAT.toLowerCase() === 'otros');
+    if (tieneOtros) {
+      categoriasMejoradas.push('y otros servicios más');
+    }
+
+    return categoriasMejoradas;
   } catch (error) {
     console.error("Error obteniendo categorías:", error);
     // Fallback a categorías predefinidas si hay error
-    return ["Alfombras", "Cortinas", "Ropa", "Cobertores", "Poltronas", "Sillones", "Butacas", "Coches bebé", "Tapicería de vehículos"];
+    return [
+      "alfombras",
+      "alfombras muro a muro (limpieza de pisos de habitaciones y salones)",
+      "cortinas",
+      "ropa y vestuario",
+      "ropa de cama",
+      "colchones",
+      "muebles (sofás, sillas, poltronas)",
+      "vehículos",
+      "y otros servicios más"
+    ];
   }
 }
 
