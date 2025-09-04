@@ -4,6 +4,10 @@ const { Twilio } = twilio;
 import { initializeAgent } from './agent/manager.js';
 import { guardarConversacionTool } from './agent/tools/memoriaTool.js';
 import { ConsoleCallbackHandler } from "@langchain/core/tracers/console";
+import dotenv from 'dotenv';
+
+// Cargar variables de entorno desde .env
+dotenv.config();
 
 // Configuración SUPER reducida de logs
 const minimalHandler = new ConsoleCallbackHandler({
