@@ -47,20 +47,29 @@ function extraerMedidasPrecisas(texto) {
   const patrones = [
     // Formato con M. (ej: "1,6 M. X 2,3 M.") - ahora maneja enteros y decimales
     /(\d+[.,]?\d*)\s*M\.\s*X\s*(\d+[.,]?\d*)\s*M\./,
-    // Formato sin M. (ej: "1,6x2,3" o "2x3") - maneja enteros y decimales
+    // Formato sin M. (ej: "1,6x2,3" o "2x3") - maneja enteros como decimales
     /(\d+[.,]?\d*)\s*[xX×]\s*(\d+[.,]?\d*)/,
-    // Formato con palabras (ej: "1,6 por 2,3") - maneja enteros y decimales
+    // Formato con palabras (ej: "1,6 por 2,3") - maneja enteros como decimales
     /(\d+[.,]?\d*)\s*por\s*(\d+[.,]?\d*)/i,
-    // Formato en contexto (ej: "la de 1,6 x 2,3" o "una de 2x3") - maneja enteros y decimales
-    /(?:la|el|de|una|un)\s+.*?(\d+[.,]?\d*)\s*[xX×]\s*(\d+[.,]?\d*)/i
+    // Formato en contexto (ej: "la de 1,6 x 2,3" o "una de 2x3") - maneja enteros como decimales
+    /(?:la|el|de|una|un)\s+.*?(\d+[.,]?\d*)\s*[xX×]\s*(\d+[.,]?\d*)/i,
+    // Formato con "por" (ej: "160 por 230")
+    /(\d+[.,]?\d*)\s*por\s*(\d+[.,]?\d*)/i
   ];
 
   for (const patron of patrones) {
     const match = texto.match(patron);
     if (match) {
       // Convertir a números, manejando tanto enteros como decimales
-      const ancho = parseFloat(match[1].replace(',', '.'));
-      const largo = parseFloat(match[2].replace(',', '.'));
+      let ancho = parseFloat(match[1].replace(',', '.'));
+      let largo = parseFloat(match[2].replace(',', '.'));
+      
+      // Detectar si son medidas en centímetros (números grandes > 10)
+      // y convertirlos a metros dividiendo por 100
+      if (ancho > 10 && largo > 10) {
+        ancho = ancho / 100;
+        largo = largo / 100;
+      }
       
       // Verificar que son números válidos y mayores que 0
       if (!isNaN(ancho) && !isNaN(largo) && ancho > 0 && largo > 0) {
@@ -205,6 +214,26 @@ function formatearPrecio(precio) {
   return `$${precioNum.toLocaleString('es-CL')}`;
 }
 
+// Función para obtener todas las categorías disponibles de la base de datos
+async function obtenerCategoriasDisponibles() {
+  try {
+    const query = `
+      SELECT DISTINCT c.NOMCAT 
+      FROM CATEGORIAS c
+      INNER JOIN PRODUCTOS p ON c.IDGRUPO = p.IDGRUPO
+      WHERE p.IDUSUARIO = 'lavadisimo' AND p.NULO = 0
+      ORDER BY c.NOMCAT
+    `;
+    
+    const categorias = await databaseManager.executeQuery(query, []);
+    return categorias.map(cat => cat.NOMCAT);
+  } catch (error) {
+    console.error("Error obteniendo categorías:", error);
+    // Fallback a categorías predefinidas si hay error
+    return ["Alfombras", "Cortinas", "Ropa", "Cobertores", "Poltronas", "Sillones", "Butacas", "Coches bebé", "Tapicería de vehículos"];
+  }
+}
+
 // Búsqueda por categoría principal - SIN límites y con JOIN para evitar duplicados
 async function buscarPorCategoria(categoria) {
   try {
@@ -318,6 +347,19 @@ const precisionSearchTool = new DynamicStructuredTool({
   func: async ({ producto, telefono }) => {
     try {
       console.log(`🎯 Búsqueda precisa para: "${producto}"`);
+
+      // Manejar consultas generales de servicios
+      const productoLower = producto.toLowerCase();
+      if (productoLower.includes('servicio') || productoLower.includes('qué servicio') || 
+          productoLower.includes('que servicio') || productoLower.includes('qué tienen') || 
+          productoLower.includes('que tienen') || productoLower === 'servicios') {
+        const categorias = await obtenerCategoriasDisponibles();
+        if (categorias.length > 0) {
+          return `Ofrecemos servicios de lavado para: ${categorias.join(', ')}. ¿Qué servicio específico te interesa?`;
+        } else {
+          return "Ofrecemos servicios de lavado para alfombras, cortinas, ropa, cobertores, poltronas, sillones, butacas, coches bebé y tapicería de vehículos. ¿Qué servicio te interesa?";
+        }
+      }
 
       // Extraer medidas del input para usar en respuestas personalizadas
       const medidasInput = extraerMedidasPrecisas(producto);
