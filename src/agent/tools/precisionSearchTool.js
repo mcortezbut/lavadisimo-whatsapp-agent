@@ -8,7 +8,7 @@ const paramsSchema = z.object({
   telefono: z.string().optional()
 });
 
-// Sistema de búsqueda por precisión numérica
+// Sistema de búsqueda por precisión numérica con categorías expandidas
 const productCategories = {
   "alfombra": ["ALFOMBRA"],
   "alfombras": ["ALFOMBRA"],
@@ -24,7 +24,22 @@ const productCategories = {
   "blusa": ["BLUS"],
   "camisa": ["CAMI"],
   "coche": ["COCHE"],
-  "carrito": ["COCHE"]
+  "carrito": ["COCHE"],
+  "auto": ["AUTO"],
+  "butaca": ["BUTACA"],
+  "poltrona": ["POLTRONA", "BUTACA", "SILLA"],
+  "silla": ["SILLA"],
+  "sofa": ["SOFA", "SILLON"],
+  "sillon": ["SILLON"],
+  "colchon": ["COLCHON"],
+  "almohada": ["ALMOHADA"],
+  "fundas": ["FUNDA"],
+  "funda": ["FUNDA"],
+  "tapiz": ["TAPIZ"],
+  "plumon": ["PLUMON"],
+  "seda": ["SEDA"],
+  "cojin": ["COJIN"],
+  "cojines": ["COJIN"]
 };
 
 // Función para extraer medidas numéricas de texto con alta precisión
@@ -126,11 +141,58 @@ function detectarVariantes(productos) {
     return { tipo: "tamaño", mensaje: "¿Qué tamaño necesitas? (chica, mediana, grande)" };
   }
   
-  // Si no se detecta variante específica, devolver opciones generales
-  return { 
-    tipo: "opciones", 
-    mensaje: "Tenemos varias opciones disponibles. ¿Podrías darme más detalles sobre lo que necesitas?"
-  };
+  // Detectar materiales (sintético, pluma, seda, etc.) basados en lo que existe en la base de datos
+  const patronesMateriales = [
+    /\b(sintético|sintetica|poliester|polyester)\b/i,
+    /\b(pluma|plumas|feather|down)\b/i,
+    /\b(seda|silk|satén|saten)\b/i,
+    /\b(lana|wool)\b/i
+  ];
+  
+  const tienenMateriales = nombres.some(nombre => 
+    patronesMateriales.some(patron => patron.test(nombre))
+  );
+  
+  if (tienenMateriales) {
+    return { tipo: "material", mensaje: "¿Qué material prefieres? (sintético, pluma, seda, lana)" };
+  }
+  
+  // Detectar atributos especiales como "extra" para cobertores
+  const patronesAtributos = [
+    /\b(extra|especial|premium|deluxe)\b/i,
+    /\b(simple|básico|basico|standard)\b/i,
+    /\b(doble|double|king|queen)\b/i
+  ];
+  
+  const tienenAtributos = nombres.some(nombre => 
+    patronesAtributos.some(patron => patron.test(nombre))
+  );
+  
+  if (tienenAtributos) {
+    return { tipo: "atributo", mensaje: "¿Prefieres versión simple o extra? Tenemos opciones con y sin relleno adicional." };
+  }
+  
+  // Detectar tipos específicos de productos
+  if (nombres.some(nombre => nombre.includes('POLTRONA') || nombre.includes('SILLA') || nombre.includes('BUTACA'))) {
+    return { tipo: "mueble", mensaje: "¿Para qué tipo de mueble necesitas el servicio? (poltrona, silla, butaca)" };
+  }
+  
+  if (nombres.some(nombre => nombre.includes('COBERTOR') || nombre.includes('FRAZADA'))) {
+    return { tipo: "cama", mensaje: "¿Qué tipo de cobertor necesitas? Tenemos simples, extra con relleno, y de diferentes materiales." };
+  }
+  
+  if (nombres.some(nombre => nombre.includes('CORTINA'))) {
+    return { tipo: "cortina", mensaje: "¿Qué tipo de cortina? Tenemos de diferentes telas, black out, roller, y medidas." };
+  }
+  
+  // Si no se detecta variante específica, devolver opciones generales con lista de productos
+  let respuesta = "Tenemos varias opciones disponibles:\n\n";
+  productos.forEach((prod, index) => {
+    respuesta += `${index + 1}. ${prod.NOMPROD}: ${formatearPrecio(prod.PRECIO)}\n`;
+  });
+  respuesta += "\n¿Podrías darme más detalles sobre lo que necesitas? Por ejemplo: tamaño, material, o características específicas.";
+  
+  return { tipo: "opciones", mensaje: respuesta };
 }
 
 // Función para formatear precio correctamente
