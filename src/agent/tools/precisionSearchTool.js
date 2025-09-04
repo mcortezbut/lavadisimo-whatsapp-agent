@@ -121,16 +121,6 @@ function detectarVariantes(productos) {
     return { tipo: "tamaño", mensaje: "¿Qué tamaño necesitas? (chica, mediana, grande)" };
   }
   
-  // Detectar colores
-  const coloresComunes = ['rojo', 'azul', 'verde', 'negro', 'blanco', 'amarillo', 'rosa', 'morado', 'gris', 'marron', 'beige'];
-  const tienenColores = nombres.some(nombre => 
-    coloresComunes.some(color => new RegExp(`\\b${color}\\b`, 'i').test(nombre))
-  );
-  
-  if (tienenColores) {
-    return { tipo: "color", mensaje: "¿De qué color lo prefieres?" };
-  }
-  
   // Si no se detecta variante específica, devolver opciones generales
   return { 
     tipo: "opciones", 

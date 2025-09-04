@@ -105,12 +105,13 @@ app.get('/version', (req, res) => {
   });
 });
 
-// Función para sanitizar respuestas y eliminar servicios prohibidos sin dañar precios
+  // Función para sanitizar respuestas y eliminar servicios prohibidos sin dañar precios
 function sanitizarRespuesta(respuesta) {
   if (typeof respuesta !== 'string') return respuesta;
   
   // Primero, proteger los precios legítimos reemplazando $ con un marcador temporal
-  const respuestaConMarcadores = respuesta.replace(/\$(\d+)/g, 'PRECIO_$1');
+  // Usamos un marcador más específico para evitar conflictos
+  const respuestaConMarcadores = respuesta.replace(/\$([\d.,]+)/g, 'PRECIO_LEGITIMO_$1');
   
   // Lista de servicios prohibidos que NO deben mencionarse
   const serviciosProhibidos = [
@@ -144,8 +145,8 @@ function sanitizarRespuesta(respuesta) {
   
   respuestaSanitizada = lineasFiltradas.join('\n');
   
-  // Restaurar precios legítimos
-  respuestaSanitizada = respuestaSanitizada.replace(/PRECIO_(\d+)/g, '$$$1');
+  // Restaurar precios legítimos manteniendo el formato original
+  respuestaSanitizada = respuestaSanitizada.replace(/PRECIO_LEGITIMO_([\d.,]+)/g, '$$$1');
   
   // Limpiar dobles espacios y saltos de línea innecesarios
   respuestaSanitizada = respuestaSanitizada
