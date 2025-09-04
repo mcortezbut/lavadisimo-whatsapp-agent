@@ -30,22 +30,27 @@ const productCategories = {
 // Función para extraer medidas numéricas de texto con alta precisión
 function extraerMedidasPrecisas(texto) {
   const patrones = [
-    // Formato con M. (ej: "1,6 M. X 2,3 M.")
-    /(\d+[.,]\d+)\s*M\.\s*X\s*(\d+[.,]\d+)\s*M\./,
-    // Formato sin M. (ej: "1,6x2,3")
-    /(\d+[.,]\d+)\s*[xX×]\s*(\d+[.,]\d+)/,
-    // Formato con palabras (ej: "1,6 por 2,3")
-    /(\d+[.,]\d+)\s*por\s*(\d+[.,]\d+)/i,
-    // Formato en contexto (ej: "la de 1,6 x 2,3")
-    /(?:la|el|de|una|un)\s+.*?(\d+[.,]\d+)\s*[xX×]\s*(\d+[.,]\d+)/i
+    // Formato con M. (ej: "1,6 M. X 2,3 M.") - ahora maneja enteros y decimales
+    /(\d+[.,]?\d*)\s*M\.\s*X\s*(\d+[.,]?\d*)\s*M\./,
+    // Formato sin M. (ej: "1,6x2,3" o "2x3") - maneja enteros y decimales
+    /(\d+[.,]?\d*)\s*[xX×]\s*(\d+[.,]?\d*)/,
+    // Formato con palabras (ej: "1,6 por 2,3") - maneja enteros y decimales
+    /(\d+[.,]?\d*)\s*por\s*(\d+[.,]?\d*)/i,
+    // Formato en contexto (ej: "la de 1,6 x 2,3" o "una de 2x3") - maneja enteros y decimales
+    /(?:la|el|de|una|un)\s+.*?(\d+[.,]?\d*)\s*[xX×]\s*(\d+[.,]?\d*)/i
   ];
 
   for (const patron of patrones) {
     const match = texto.match(patron);
     if (match) {
+      // Convertir a números, manejando tanto enteros como decimales
       const ancho = parseFloat(match[1].replace(',', '.'));
       const largo = parseFloat(match[2].replace(',', '.'));
-      return { ancho, largo, original: match[0] };
+      
+      // Verificar que son números válidos y mayores que 0
+      if (!isNaN(ancho) && !isNaN(largo) && ancho > 0 && largo > 0) {
+        return { ancho, largo, original: match[0] };
+      }
     }
   }
   return null;
@@ -252,15 +257,30 @@ const precisionSearchTool = new DynamicStructuredTool({
     try {
       console.log(`🎯 Búsqueda precisa para: "${producto}"`);
 
+      // Extraer medidas del input para usar en respuestas personalizadas
+      const medidasInput = extraerMedidasPrecisas(producto);
+
       const resultados = await busquedaInteligente(producto);
 
       if (resultados.length === 0) {
-        // If no results, but it's an alfombra search, show all alfombra options
-        if (producto.toLowerCase().includes('alfombra')) {
+        // If no results, but it's an alfombra search or measures were provided, show all alfombra options
+        if (medidasInput || producto.toLowerCase().includes('alfombra')) {
           const alfombras = await buscarPorCategoria('alfombra', 10);
           if (alfombras.length > 0) {
-            const variante = detectarVariantes(alfombras);
-            return `No encontré exactamente lo que buscas, pero tenemos ${alfombras.length} opciones de alfombras. ${variante.mensaje}`;
+            // Si se proporcionaron medidas, mostrar opciones con mensaje específico
+            if (medidasInput) {
+              let respuesta = `No encontré una alfombra exactamente de ${medidasInput.ancho} x ${medidasInput.largo} metros, pero tenemos estas opciones:\n\n`;
+              alfombras.forEach((prod, index) => {
+                const medidasProd = extraerMedidasDeProducto(prod.NOMPROD);
+                const infoMedidas = medidasProd ? ` (${medidasProd.ancho} x ${medidasProd.largo} m)` : '';
+                respuesta += `${index + 1}. ${prod.NOMPROD}: ${formatearPrecio(prod.PRECIO)}${infoMedidas}\n`;
+              });
+              respuesta += `\n¿Te interesa alguna de estas?`;
+              return respuesta;
+            } else {
+              const variante = detectarVariantes(alfombras);
+              return `No encontré exactamente lo que buscas, pero tenemos ${alfombras.length} opciones de alfombras. ${variante.mensaje}`;
+            }
           }
         }
         return `No encontré servicios que coincidan con "${producto}". ¿Podrías ser más específico? Por ejemplo: "alfombra 2x3", "cortina mediana", etc.`;
@@ -272,9 +292,22 @@ const precisionSearchTool = new DynamicStructuredTool({
         return `${prod.NOMPROD}: ${precioFormateado}`;
       }
 
-      // Si hay múltiples resultados, detectar variantes y preguntar por detalles
-      const variante = detectarVariantes(resultados);
-      return variante.mensaje;
+      // Si hay múltiples resultados, verificar si se proporcionaron medidas
+      if (medidasInput) {
+        // Medidas proporcionadas pero no coincidencia exacta, mostrar opciones disponibles
+        let respuesta = `No encontré una alfombra exactamente de ${medidasInput.ancho} x ${medidasInput.largo} metros, pero tenemos estas opciones:\n\n`;
+        resultados.forEach((prod, index) => {
+          const medidasProd = extraerMedidasDeProducto(prod.NOMPROD);
+          const infoMedidas = medidasProd ? ` (${medidasProd.ancho} x ${medidasProd.largo} m)` : '';
+          respuesta += `${index + 1}. ${prod.NOMPROD}: ${formatearPrecio(prod.PRECIO)}${infoMedidas}\n`;
+        });
+        respuesta += `\n¿Te interesa alguna de estas?`;
+        return respuesta;
+      } else {
+        // No se proporcionaron medidas, detectar variantes
+        const variante = detectarVariantes(resultados);
+        return variante.mensaje;
+      }
 
     } catch (error) {
       console.error("Error en precisionSearchTool:", error);
