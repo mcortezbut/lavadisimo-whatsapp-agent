@@ -5,6 +5,7 @@ import { initializeAgent } from './agent/manager.js';
 import { guardarConversacionTool } from './agent/tools/memoriaTool.js';
 import { ConsoleCallbackHandler } from "@langchain/core/tracers/console";
 import dotenv from 'dotenv';
+import { registrarMensajeAgente } from './agent/tools/contextManager.js';
 
 // Cargar variables de entorno desde .env
 dotenv.config();
@@ -90,7 +91,8 @@ app.get('/', (req, res) => {
     features: [
       'Búsqueda inteligente de medidas',
       'Sin invención de información',
-      'Uso obligatorio de herramientas'
+      'Uso obligatorio de herramientas',
+      'Gestión de contexto mejorada'
     ]
   });
 });
@@ -98,13 +100,14 @@ app.get('/', (req, res) => {
 // Endpoint para verificar versión del código
 app.get('/version', (req, res) => {
   res.json({
-    version: '2.0.0',
-    last_commit: '81c8d14d - Forzar uso obligatorio de herramientas',
+    version: '2.1.0',
+    last_commit: 'Context management enhanced - intelligent conversation tracking',
     deployment_time: new Date().toISOString(),
     features: [
-      'extraerMedidasDeFrase implementado',
-      'Instrucciones críticas anti-invención',
-      'Uso obligatorio consultar_precio'
+      'Gestión de contexto inteligente',
+      'Detección automática de servicios',
+      'Seguimiento de conversaciones naturales',
+      'Base de datos dinámica para servicios'
     ]
   });
 });
@@ -218,7 +221,14 @@ app.post('/webhook', async (req, res) => {
     responseText = sanitizarRespuesta(responseText);
     console.log(`🔄 Respuesta sanitizada: ${responseText.substring(0, 50)}...`);
     
-    // Guardar respuesta del agente
+    // Guardar respuesta del agente en el contexto de conversación
+    try {
+      registrarMensajeAgente(telefonoLimpio, responseText);
+    } catch (error) {
+      console.log('⚠️ No se pudo guardar mensaje del agente en contexto:', error.message);
+    }
+    
+    // Guardar respuesta del agente en base de datos
     try {
       await guardarConversacionTool.func({
         telefono: telefonoLimpio,
@@ -228,7 +238,7 @@ app.post('/webhook', async (req, res) => {
         contexto: null
       });
     } catch (error) {
-      console.log('⚠️ No se pudo guardar respuesta del agente:', error.message);
+      console.log('⚠️ No se pudo guardar respuesta del agente en BD:', error.message);
     }
     
     // Intentar enviar con Twilio API
