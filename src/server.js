@@ -5,7 +5,6 @@ import { initializeAgent } from './agent/manager.js';
 import { guardarConversacionTool } from './agent/tools/memoriaTool.js';
 import { ConsoleCallbackHandler } from "@langchain/core/tracers/console";
 import dotenv from 'dotenv';
-import { BufferMemory } from "langchain/memory";
 
 // Cargar variables de entorno desde .env
 dotenv.config();
@@ -22,19 +21,20 @@ const app = express();
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
-// Almacenamiento de memoria por número de teléfono
-const conversationMemories = new Map();
+// Almacenamiento de historial de conversación por número de teléfono
+const conversationHistories = new Map();
 
-// Función para obtener o crear memoria de conversación
-function getOrCreateMemory(telefono) {
-  if (!conversationMemories.has(telefono)) {
-    conversationMemories.set(telefono, new BufferMemory({
-      memoryKey: "chat_history",
-      returnMessages: true,
-      inputKey: "input"
-    }));
+// Función para obtener o crear historial de conversación
+function getOrCreateHistory(telefono) {
+  if (!conversationHistories.has(telefono)) {
+    conversationHistories.set(telefono, []);
   }
-  return conversationMemories.get(telefono);
+  return conversationHistories.get(telefono);
+}
+
+// Función para formatear el historial de conversación para el prompt
+function formatChatHistory(history) {
+  return history.map(msg => `${msg.role}: ${msg.content}`).join('\n');
 }
 
 // LOG GLOBAL para todas las peticiones
@@ -185,8 +185,8 @@ app.post('/webhook', async (req, res) => {
     // Obtener memoria de conversación para este número
     const memory = getOrCreateMemory(telefonoLimpio);
     
-    // Guardar mensaje del cliente en la memoria
-    await memory.chatHistory.addUserMessage(Body);
+    // Guardar mensaje del cliente en la memoria usando saveContext
+    await memory.saveContext({ input: Body }, { output: "" });
 
     const agentResult = await lavanderiaAgent.invoke({
       input: Body.trim(),
@@ -200,8 +200,8 @@ app.post('/webhook', async (req, res) => {
     let responseText = agentResult.output || "No se pudo procesar la consulta.";
     console.log(`📤 Respuesta: ${responseText.substring(0, 50)}...`);
     
-    // Guardar respuesta del agente en la memoria
-    await memory.chatHistory.addAIMessage(responseText);
+    // Guardar respuesta del agente en la memoria usando saveContext
+    await memory.saveContext({ input: Body }, { output: responseText });
     
     // Aplicar sanitización
     responseText = sanitizarRespuesta(responseText);
