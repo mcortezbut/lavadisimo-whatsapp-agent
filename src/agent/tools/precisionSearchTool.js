@@ -307,7 +307,7 @@ function formatearPrecio(precio) {
   return `$${precioNum.toLocaleString('es-CL')}`;
 }
 
-// Función para obtener todas las categorías disponibles de la base de datos con nombres mejorados
+// Función para obtener todas las categorías disponibles dinámicamente desde la base de datos
 async function obtenerCategoriasDisponibles() {
   try {
     const query = `
@@ -320,79 +320,36 @@ async function obtenerCategoriasDisponibles() {
     
     const categorias = await databaseManager.executeQuery(query, []);
     
-    // Mapear nombres de categorías a versiones más descriptivas y user-friendly
-    const categoriasMejoradas = categorias.map(cat => {
-      const nombre = cat.NOMCAT;
-      const nombreLower = nombre.toLowerCase().trim();
-      
-      // Mejorar nombres específicos con coincidencia insensible a mayúsculas y espacios
-      if (nombreLower.includes('muro') || nombreLower === 'muro a muro') {
-        return 'alfombras muro a muro (limpieza de pisos de habitaciones y salones)';
-      }
-      if (nombreLower === 'otros') {
-        return null; // Excluir "otros" de la lista principal
-      }
-      if (nombreLower.includes('cortina') || nombreLower.includes('visillo')) {
-        return 'cortinas';
-      }
-      if (nombreLower.includes('tela') || nombreLower.includes('vestuario') || nombreLower.includes('ropa')) {
-        return 'ropa y vestuario';
-      }
-      if (nombreLower.includes('sofá') || nombreLower.includes('silla') || nombreLower.includes('butaca') || nombreLower.includes('poltrona') || nombreLower.includes('mueble')) {
-        return 'muebles (sofás, sillas, poltronas)';
-      }
-      if (nombreLower.includes('alfombra')) {
-        return 'alfombras';
-      }
-      if (nombreLower.includes('vehículo') || nombreLower.includes('auto') || nombreLower.includes('coche')) {
-        return 'vehículos';
-      }
-      if (nombreLower.includes('ropa de cama') || nombreLower.includes('colchón') || nombreLower.includes('almohada') || nombreLower.includes('cobertor')) {
-        return nombre; // Mantener estos nombres como están
-      }
-      
-      return nombre;
-    }).filter(cat => cat !== null); // Filtrar categorías excluidas
+    // Devolver los nombres de categorías directamente desde la base de datos
+    // Sin mapeo fijo para que sea completamente dinámico
+    const categoriasNombres = categorias.map(cat => cat.NOMCAT).filter(nombre => 
+      nombre.toLowerCase() !== 'otros' // Excluir "otros" de la lista principal
+    );
 
-    // Ordenar categorías: poner las más comunes primero
-    const ordenPreferido = [
-      'alfombras',
-      'alfombras muro a muro (limpieza de pisos de habitaciones y salones)',
-      'cortinas',
-      'ropa y vestuario',
-      'ropa de cama',
-      'colchones',
-      'muebles (sofás, sillas, poltronas)',
-      'vehículos'
-    ];
-
-    // Ordenar según el orden preferido
-    categoriasMejoradas.sort((a, b) => {
-      const indexA = ordenPreferido.findIndex(item => a.toLowerCase().includes(item.toLowerCase()));
-      const indexB = ordenPreferido.findIndex(item => b.toLowerCase().includes(item.toLowerCase()));
-      return (indexA === -1 ? 999 : indexA) - (indexB === -1 ? 999 : indexB);
-    });
+    // Ordenar alfabéticamente para consistencia
+    categoriasNombres.sort();
 
     // Añadir "otros servicios" al final si existe la categoría "otros"
     const tieneOtros = categorias.some(cat => cat.NOMCAT.toLowerCase() === 'otros');
     if (tieneOtros) {
-      categoriasMejoradas.push('y otros servicios más');
+      categoriasNombres.push('otros servicios');
     }
 
-    return categoriasMejoradas;
+    return categoriasNombres;
   } catch (error) {
     console.error("Error obteniendo categorías:", error);
     // Fallback a categorías predefinidas si hay error
     return [
       "alfombras",
-      "alfombras muro a muro (limpieza de pisos de habitaciones y salones)",
       "cortinas",
-      "ropa y vestuario",
-      "ropa de cama",
-      "colchones",
-      "muebles (sofás, sillas, poltronas)",
+      "ropa",
+      "cobertores",
+      "poltronas",
+      "sillones",
+      "butacas",
+      "coches bebé",
       "vehículos",
-      "y otros servicios más"
+      "otros servicios"
     ];
   }
 }

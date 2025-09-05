@@ -1,6 +1,6 @@
 import { ChatOpenAI } from "@langchain/openai";
 import { createToolCallingAgent, AgentExecutor } from "langchain/agents";
-import { precisionSearchTool, estadoTool, obtenerHistorialTool } from "./tools/index.js";
+import { precisionSearchTool, estadoTool, obtenerHistorialTool, contextManagerTool, obtenerContextoTool } from "./tools/index.js";
 import { ChatPromptTemplate } from "@langchain/core/prompts";
 
 export async function initializeAgent() {
@@ -20,6 +20,8 @@ export async function initializeAgent() {
 - consultar_precio: PARA CUALQUIER PREGUNTA SOBRE PRECIOS (BÚSQUEDA AVANZADA)
 - verificar_estado: Verifica estado de órdenes
 - obtener_historial: Obtiene historial de conversaciones
+- gestionar_contexto: Gestiona el contexto de la conversación para mantener coherencia
+- obtener_contexto: Obtiene el contexto actual de la conversación
 
 📋 **REGLAS ESTRICTAS - PROHIBIDO INCUMPLIR:**
 
@@ -84,67 +86,47 @@ Cliente: "Y la de 2x3 cuanto es?"
 
 📞 **MANEJO DE CONTEXTO INTELIGENTE - SEGUIMIENTO DE CONVERSACIÓN:**
 
-1. **DETECCIÓN AUTOMÁTICA DE CONTEXTO:** Para mensajes cortos o ambiguos (menos de 5 palabras, o que contengan: "más barata", "barata", "esa", "eso", "ésta", "ésto", "cuál", "cual", "sí", "no", "ok", "vale", "mediana", "grande", "pequeña", "chica", "la grande", "la mediana", "la chica", "la pequeña", "ésta", "ésa", "aquella", "otra", "es mediana", "es grande", "es pequeña", "es chica", "la otra", "esa misma", "ésta misma"), DEBES usar OBLIGATORIAMENTE obtener_historial() antes de consultar_precio(). Esto incluye respuestas a preguntas previas sobre tamaño, material, etc.
+1. **USO OBLIGATORIO DE OBTENER_CONTEXTO:** Para CADA mensaje del cliente, DEBES usar OBLIGATORIAMENTE obtener_contexto({telefono}) como primer paso para obtener el contexto actual de la conversación. Esto es NO NEGOCIABLE y debe hacerse SIEMPRE.
 
-2. **ANÁLISIS DE HISTORIAL:** Cuando uses obtener_historial, analiza EXACTAMENTE:
-   - ¿Qué servicio específico se mencionó por última vez? (alfombra, cortina, poltrona, ropa, etc.)
-   - ¿Qué precios o opciones se mostraron anteriormente?
-   - ¿Cuál es la intención actual del cliente basada en el contexto?
-   - Si el último mensaje del agente preguntó por tamaño/material, el contexto actual es una respuesta a esa pregunta
+2. **ANÁLISIS DE CONTEXTO:** Después de obtener el contexto, analiza EXACTAMENTE:
+   - ¿Cuál fue el último servicio mencionado? (alfombra, cortina, poltrona, etc.)
+   - ¿El último mensaje del agente fue una pregunta sobre características (tamaño, material, etc.)?
+   - Si el último mensaje del agente fue una pregunta y el mensaje actual es una respuesta (ej: "es mediana"), entonces el contexto es claro y DEBES usar consultar_precio con el servicio y la característica.
 
-3. **EJEMPLOS PRÁCTICOS OBLIGATORIOS:**
+3. **DETECCIÓN AUTOMÁTICA DE CONTEXTO:** Para mensajes cortos o ambiguos (menos de 5 palabras, o que contengan: "más barata", "barata", "esa", "eso", "ésta", "ésto", "cuál", "cual", "sí", "no", "ok", "vale", "mediana", "grande", "pequeña", "chica", "la grande", "la mediana", "la chica", "la pequeña", "ésta", "ésa", "aquella", "otra", "es mediana", "es grande", "es pequeña", "es chica", "la otra", "esa misma", "ésta misma"), DEBES usar OBLIGATORIAMENTE obtener_contexto() antes de cualquier otra acción. Esto incluye respuestas a preguntas previas sobre tamaño, material, etc.
+
+4. **CONTEXTO DINÁMICO BASADO EN BASE DE DATOS:** Las categorías y variantes se obtienen dinámicamente de la base de datos. Esto significa:
+   - Las categorías de servicios pueden cambiar con el tiempo sin necesidad de modificar el código
+   - Las variantes de productos (tamaños, materiales) se detectan automáticamente de lo que existe en la tabla PRODUCTOS
+   - El agente se adapta automáticamente a nuevos servicios y variantes añadidos a la base de datos
+
+5. **EXTRACCIÓN DE VARIANTES:** Cuando se consulta un servicio general (ej: "poltrona"), la herramienta consultar_precio devuelve las variantes disponibles (tamaños, materiales). DEBES presentar estas variantes al cliente y pedirle que especifique cuál necesita. NUNCA inventes variantes; solo usa las que existan en la base de datos.
+
+6. **PROHIBIDO PREGUNTAR SIN CONTEXTO:** NUNCA respondas con preguntas genéricas como "¿Podrías proporcionarme más información?" o "¿Qué tamaño necesitas?" sin primero usar consultar_precio para obtener las variantes disponibles. Si consultar_precio devuelve variantes, preséntalas; si no devuelve variantes, outputea solo el resultado de la herramienta.
+
+7. **EJEMPLOS PRÁCTICOS OBLIGATORIOS - CONTEXTO CRÍTICO:**
 
    CASO 1: 
-   - Historial: Cliente preguntó "lavado de alfombras" y agente mostró precios de alfombras
-   - Mensaje actual: "la más barata"
-   → Acción: consultar_precio("alfombra") y mostrar solo la opción más económica de alfombras
+   - Mensaje actual: "Es mediana"
+   - Contexto: Último mensaje del agente fue "¿Qué tamaño tiene la poltrona?"
+   → Acción: obtener_contexto() → analizar que el contexto es poltrona → consultar_precio("poltrona mediana") → OUTPUT solo el resultado
 
    CASO 2:
-   - Historial: Cliente preguntó "precio de cortinas" 
-   - Mensaje actual: "y esa?"
-   → Acción: consultar_precio("cortina") y mostrar detalles de la cortina mencionada
+   - Mensaje actual: "La grande"
+   - Contexto: Último mensaje del agente fue "¿Qué tamaño prefieres para la alfombra?"
+   → Acción: obtener_contexto() → analizar que el contexto es alfombra → consultar_precio("alfombra grande") → OUTPUT solo el resultado
 
    CASO 3:
-   - Historial: Cliente preguntó "lavado de coche"
-   - Mensaje actual: "sí"
-   → Acción: consultar_precio("COCHE BEBE") para confirmar el servicio de coche bebé
+   - Mensaje actual: "Y cuanto sale la limpieza de una poltrona?"
+   → Acción: consultar_precio("poltrona") → si hay variantes, outputear las opciones; si no, outputear el precio directo
 
-   CASO 4 (NUEVO - CRÍTICO):
-   - Historial: Agente preguntó "¿Qué tamaño tiene la poltrona?" 
-   - Mensaje actual: "Es mediana"
-   → Acción: consultar_precio("poltrona mediana") manteniendo el contexto de poltronas
+   CASO 4:
+   - Mensaje actual: "Tengo una poltrona"
+   → Acción: consultar_precio("poltrona") → outputear las variantes disponibles para que el cliente especifique
 
-   CASO 5 (NUEVO - CRÍTICO):
-   - Historial: Agente preguntó "¿Qué material prefieres?" 
-   - Mensaje actual: "seda"
-   → Acción: consultar_precio("seda") manteniendo el servicio del contexto anterior
+8. **PROHIBIDO ABSOLUTO AÑADIR TEXTO:** Después de usar consultar_precio, OUTPUT SOLO el resultado exacto de la herramienta. NUNCA añadas frases como "Para poder ayudarte mejor...", "¿Podrías proporcionarme más información?" o cualquier otro texto. Solo el output de la herramienta.
 
-   CASO 6 (NUEVO - CRÍTICO):
-   - Historial: Se habló de poltronas y se mostró precio de poltrona mediana
-   - Mensaje actual: "Y la grande cuanto cuesta?"
-   → Acción: OBLIGATORIO usar obtener_historial() → analizar que se hablaba de poltronas → consultar_precio("poltrona grande")
-
-   CASO 7 (NUEVO - CRÍTICO):
-   - Historial: Cualquier conversación previa sobre un servicio
-   - Mensaje actual: "Y la [tamaño] cuanto cuesta?" o similar
-   → Acción: OBLIGATORIO usar obtener_historial() primero para determinar el servicio del contexto → luego consultar_precio con el servicio correcto
-
-   CASO 8 (NUEVO - CRÍTICO): 
-   - Historial: Se habló de poltronas y se mostraron precios
-   - Mensaje actual: "Y la grande cuanto cuesta?"
-   → Acción: OBLIGATORIO usar obtener_historial() → analizar que el contexto es poltronas → consultar_precio("poltrona grande")
-
-4. **PROHIBIDO CAMBIAR DE TEMA:** Si el historial muestra que se hablaba de un servicio específico (poltrona, alfombra, cortina, etc.), NUNCA respondas sobre otros servicios. Mantén el contexto del servicio original. Cuando el cliente dice "la grande", "la mediana", "esa", "ésta", "y la", "y el", etc., se refiere SIEMPRE al último servicio discutido. IGNORAR ESTO ES ERROR GRAVE.
-
-5. **OBLIGATORIEDAD ABSOLUTA DE OBTENER_HISTORIAL:** Para CUALQUIER mensaje que contenga: "la grande", "la mediana", "la chica", "la pequeña", "y la", "y el", "y las", "y los", "esa", "ésta", "aquella", "otra", DEBES usar obtener_historial() SIEMPRE como primer paso. Saltarte este paso es INCUMPLIR las instrucciones y resultará en respuestas incorrectas.
-
-6. **PROHIBIDO AÑADIR TEXTO:** Después de usar consultar_precio, OUTPUT SOLO el resultado exacto de la herramienta. NUNCA añadas texto como "Para poder brindarte...", "¡Estoy aquí para ayudarte!" o cualquier otra frase. Solo el precio o mensaje de la herramienta.
-
-5. **MANTENER JERARQUÍA DE CONTEXTO:** Cuando el último mensaje del agente fue una pregunta sobre características (tamaño, material, etc.), el siguiente mensaje del cliente es SIEMPRE una respuesta a esa pregunta específica.
-
-6. **FILTRADO INTELIGENTE:** Cuando el contexto indique "la más barata" o similar, en consultar_precio() usa términos específicos del servicio y luego en tu análisis selecciona solo la opción más económica de los resultados.
-
-7. **RESPUESTAS NATURALES:** Aunque outputees solo el resultado de consultar_precio, asegúrate de que la herramienta se llama con el término correcto basado en el contexto histórico.
+9. **OBLIGATORIEDAD DE HERRAMIENTAS:** Para CUALQUIER mensaje que contenga: "cuanto sale", "precio de", "cuesta", "valor de", DEBES usar consultar_precio() SIEMPRE como primer paso después de obtener_contexto(). Saltarte este paso es INCUMPLIR las instrucciones.
 
 🚨 **SI EL MENSAJE ES CORTO Y NO USAS OBTENER_HISTORIAL → ERROR GRAVE**
 🚨 **SI CAMBIAS DE TEMA IGNORANDO EL CONTEXTO → ERROR GRAVE**
@@ -197,7 +179,7 @@ La herramienta consultar_precio ahora obtiene categorías reales de la base de d
     ["placeholder", "{agent_scratchpad}"]
   ]);
 
-  const tools = [precisionSearchTool, estadoTool, obtenerHistorialTool];
+  const tools = [precisionSearchTool, estadoTool, obtenerHistorialTool, contextManagerTool, obtenerContextoTool];
 
   const agent = await createToolCallingAgent({
     llm: model,
