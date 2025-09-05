@@ -5,22 +5,37 @@ import { initializeAgent } from './agent/manager.js';
 import { guardarConversacionTool } from './agent/tools/memoriaTool.js';
 import { ConsoleCallbackHandler } from "@langchain/core/tracers/console";
 import dotenv from 'dotenv';
-import { registrarMensajeAgente } from './agent/tools/contextManager.js';
+import { ConversationBufferMemory } from "langchain/memory";
 
 // Cargar variables de entorno desde .env
 dotenv.config();
 
 // Configuración SUPER reducida de logs
 const minimalHandler = new ConsoleCallbackHandler({
-  alwaysVerbose: false,  // ← Desactiva logs internos
-  ignoreLLM: true,       // ← Omite detalles del modelo AI
-  ignoreChain: true,     // ← Oculta pasos intermedios
-  ignoreAgent: true      // ← Elimina trazas del Agent
+  alwaysVerbose: false,
+  ignoreLLM: true,
+  ignoreChain: true,
+  ignoreAgent: true
 });
 
 const app = express();
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
+
+// Almacenamiento de memoria por número de teléfono
+const conversationMemories = new Map();
+
+// Función para obtener o crear memoria de conversación
+function getOrCreateMemory(telefono) {
+  if (!conversationMemories.has(telefono)) {
+    conversationMemories.set(telefono, new ConversationBufferMemory({
+      memoryKey: "chat_history",
+      returnMessages: true,
+      inputKey: "input"
+    }));
+  }
+  return conversationMemories.get(telefono);
+}
 
 // LOG GLOBAL para todas las peticiones
 app.use((req, res, next) => {
@@ -39,7 +54,6 @@ if (!process.env.TWILIO_ACCOUNT_SID || !process.env.TWILIO_AUTH_TOKEN) {
   process.exit(1);
 }
 
-// Verificar formato de credenciales
 if (!process.env.TWILIO_ACCOUNT_SID.startsWith('AC')) {
   console.error('❌ Error: TWILIO_ACCOUNT_SID debe comenzar con "AC"');
   process.exit(1);
@@ -58,12 +72,10 @@ const twilioClient = new Twilio(
     console.log('✅ Conexión con Twilio exitosa:', account.friendlyName);
   } catch (error) {
     console.error('❌ Error probando conexión con Twilio:', error.message);
-    console.error('Código de error:', error.code);
-    console.error('Más info:', error.moreInfo);
   }
 })();
 
-// Configuración del handler de logs (antes de inicializar el Agent)
+// Configuración del handler de logs
 const minimalConsoleHandler = new ConsoleCallbackHandler({
   alwaysVerbose: false,
   verboseMethods: []
@@ -81,46 +93,27 @@ let lavanderiaAgent;
   }
 })();
 
-// Ruta de health check con información de versión
+// Ruta de health check
 app.get('/', (req, res) => {
   res.json({
     status: 'OK',
-    message: '🛠️ Agent de Lavadísimo funcionando',
-    version: '2.0.0',
+    message: '🛠️ Agent de WhatsApp funcionando',
+    version: '3.0.0',
     timestamp: new Date().toISOString(),
     features: [
-      'Búsqueda inteligente de medidas',
-      'Sin invención de información',
-      'Uso obligatorio de herramientas',
-      'Gestión de contexto mejorada'
+      'Memoria conversacional con LangChain',
+      'Contexto inteligente nativo',
+      'Base de datos dinámica'
     ]
   });
 });
 
-// Endpoint para verificar versión del código
-app.get('/version', (req, res) => {
-  res.json({
-    version: '2.1.0',
-    last_commit: 'Context management enhanced - intelligent conversation tracking',
-    deployment_time: new Date().toISOString(),
-    features: [
-      'Gestión de contexto inteligente',
-      'Detección automática de servicios',
-      'Seguimiento de conversaciones naturales',
-      'Base de datos dinámica para servicios'
-    ]
-  });
-});
-
-  // Función para sanitizar respuestas y eliminar servicios prohibidos sin dañar precios
+// Función para sanitizar respuestas
 function sanitizarRespuesta(respuesta) {
   if (typeof respuesta !== 'string') return respuesta;
   
-  // Primero, proteger los precios legítimos reemplazando $ con un marcador temporal
-  // Usamos un marcador más específico para evitar conflictos
   const respuestaConMarcadores = respuesta.replace(/\$([\d.,]+)/g, 'PRECIO_LEGITIMO_$1');
   
-  // Lista de servicios prohibidos que NO deben mencionarse
   const serviciosProhibidos = [
     'tareas de aseo',
     'tarea de aseo', 
@@ -128,19 +121,17 @@ function sanitizarRespuesta(respuesta) {
     'reciclaje de plásticos',
     'baño de mujer',
     'baño de hombre',
-    'PRECIO_1', // Servicios de $1 convertidos
+    'PRECIO_1',
     'por PRECIO_1',
     'cada uno por PRECIO_1'
   ];
   
-  // Eliminar menciones de servicios prohibidos
   let respuestaSanitizada = respuestaConMarcadores;
   serviciosProhibidos.forEach(prohibido => {
     const regex = new RegExp(prohibido, 'gi');
     respuestaSanitizada = respuestaSanitizada.replace(regex, '');
   });
   
-  // Eliminar frases completas que contengan servicios prohibidos
   const lineas = respuestaSanitizada.split('\n');
   const lineasFiltradas = lineas.filter(linea => {
     const lowerLinea = linea.toLowerCase();
@@ -151,36 +142,19 @@ function sanitizarRespuesta(respuesta) {
   });
   
   respuestaSanitizada = lineasFiltradas.join('\n');
-  
-  // Restaurar precios legítimos manteniendo el formato original
   respuestaSanitizada = respuestaSanitizada.replace(/PRECIO_LEGITIMO_([\d.,]+)/g, '$$$1');
   
-  // Limpiar dobles espacios y saltos de línea innecesarios
   respuestaSanitizada = respuestaSanitizada
     .replace(/\s+/g, ' ')
     .replace(/\n\s*\n/g, '\n')
     .trim();
   
-  // Si después de sanitizar queda vacío o muy corto, devolver mensaje genérico
   if (!respuestaSanitizada || respuestaSanitizada.length < 20) {
-    return "No logré encontrar información sobre ese servicio. ¿Necesitas consultar sobre algún otro servicio de lavandería?";
+    return "No logré encontrar información sobre ese servicio. ¿Necesitas consultar sobre algún otro servicio?";
   }
   
   return respuestaSanitizada;
 }
-
-// Agrega esto ANTES del endpoint /webhook
-const formatAgentResponse = (rawResponse) => {
-  if (typeof rawResponse === 'string') {
-    return rawResponse;
-  }
-  
-  if (rawResponse.output?.includes('Agent stopped')) {
-    return "No logré encontrar esa información. ¿Necesitas otro servicio?";
-  }
-
-  return "Por favor pregunta por servicios de lavandería específicos";
-};
 
 // Webhook de Twilio
 app.post('/webhook', async (req, res) => {
@@ -200,7 +174,7 @@ app.post('/webhook', async (req, res) => {
       await guardarConversacionTool.func({
         telefono: telefonoLimpio,
         mensaje: Body,
-        tipo: 0, // 0 = mensaje entrante (cliente)
+        tipo: 0,
         intencion: null,
         contexto: null
       });
@@ -208,37 +182,42 @@ app.post('/webhook', async (req, res) => {
       console.log('⚠️ No se pudo guardar mensaje entrante:', error.message);
     }
 
-    const agentResponse = await lavanderiaAgent.invoke({
+    // Obtener memoria de conversación para este número
+    const memory = getOrCreateMemory(telefonoLimpio);
+    
+    // Guardar mensaje del cliente en la memoria
+    await memory.chatHistory.addUserMessage(Body);
+
+    const agentResult = await lavanderiaAgent.invoke({
       input: Body.trim(),
       telefono: telefonoLimpio
+    }, {
+      callbacks: [memory]
     });
-    console.log("🟡 agentResponse:", agentResponse);
+
+    console.log("🟡 agentResponse:", agentResult);
   
-    let responseText = agentResponse.output || "No se pudo procesar la consulta.";
+    let responseText = agentResult.output || "No se pudo procesar la consulta.";
     console.log(`📤 Respuesta: ${responseText.substring(0, 50)}...`);
     
-    // Aplicar sanitización para eliminar servicios prohibidos
+    // Guardar respuesta del agente en la memoria
+    await memory.chatHistory.addAIMessage(responseText);
+    
+    // Aplicar sanitización
     responseText = sanitizarRespuesta(responseText);
     console.log(`🔄 Respuesta sanitizada: ${responseText.substring(0, 50)}...`);
-    
-    // Guardar respuesta del agente en el contexto de conversación
-    try {
-      registrarMensajeAgente(telefonoLimpio, responseText);
-    } catch (error) {
-      console.log('⚠️ No se pudo guardar mensaje del agente en contexto:', error.message);
-    }
     
     // Guardar respuesta del agente en base de datos
     try {
       await guardarConversacionTool.func({
         telefono: telefonoLimpio,
         mensaje: responseText,
-        tipo: 1, // 1 = mensaje saliente (agente)
+        tipo: 1,
         intencion: null,
         contexto: null
       });
     } catch (error) {
-      console.log('⚠️ No se pudo guardar respuesta del agente en BD:', error.message);
+      console.log('⚠️ No se pudo guardar respuesta del agente:', error.message);
     }
     
     // Intentar enviar con Twilio API
@@ -252,9 +231,7 @@ app.post('/webhook', async (req, res) => {
       res.status(200).send('<Response></Response>');
     } catch (twilioError) {
       console.error('❌ Error enviando con Twilio API:', twilioError.message);
-      console.log('🔄 Intentando respuesta alternativa con TwiML...');
       
-      // Respuesta alternativa usando TwiML
       const twimlResponse = `
         <Response>
           <Message>${responseText}</Message>
