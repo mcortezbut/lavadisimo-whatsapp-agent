@@ -4,6 +4,7 @@ const { Twilio } = twilio;
 import { initializeAgent } from './agent/manager.js';
 import { guardarConversacionTool } from './agent/tools/memoriaTool.js';
 import { ConsoleCallbackHandler } from "@langchain/core/tracers/console";
+import { HumanMessage, AIMessage } from "@langchain/core/messages";
 import dotenv from 'dotenv';
 
 // Cargar variables de entorno desde .env
@@ -32,9 +33,16 @@ function getOrCreateHistory(telefono) {
   return conversationHistories.get(telefono);
 }
 
-// Función para formatear el historial de conversación para el prompt
-function formatChatHistory(history) {
-  return history.map(msg => `${msg.role}: ${msg.content}`).join('\n');
+// Función para convertir el historial a formato LangChain BaseMessage
+function convertToLangChainMessages(history) {
+  return history.map(msg => {
+    if (msg.role === "human") {
+      return new HumanMessage(msg.content);
+    } else if (msg.role === "ai") {
+      return new AIMessage(msg.content);
+    }
+    return new HumanMessage(msg.content); // fallback
+  });
 }
 
 // LOG GLOBAL para todas las peticiones
@@ -188,13 +196,13 @@ app.post('/webhook', async (req, res) => {
     // Agregar mensaje del cliente al historial
     chatHistory.push({ role: "human", content: Body });
 
-    // Formatear historial para el agente
-    const formattedHistory = formatChatHistory(chatHistory);
+    // Convertir historial a formato LangChain BaseMessage
+    const langChainMessages = convertToLangChainMessages(chatHistory);
 
     const agentResult = await lavanderiaAgent.invoke({
       input: Body.trim(),
       telefono: telefonoLimpio,
-      chat_history: formattedHistory
+      chat_history: langChainMessages
     });
 
     console.log("🟡 agentResponse:", agentResult);
