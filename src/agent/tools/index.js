@@ -3,4 +3,4 @@ export { default as estadoTool } from './estadoTool.js';
 export { guardarConversacionTool, obtenerHistorialTool } from './memoriaTool.js';
 export { default as busquedaAvanzadaTool } from './advancedSearchTool.js';
 export { default as precisionSearchTool } from './precisionSearchTool.js';
-export { contextManagerTool, obtenerContextoTool, construirConsultaDinamica, extraerContextoDeMensaje } from './contextManager.js';
+export { contextManagerTool, obtenerContextoTool, construirConsultaContextual, registrarMensajeAgente, limpiarContexto } from './contextManager.js';
