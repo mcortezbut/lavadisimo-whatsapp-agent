@@ -182,17 +182,19 @@ app.post('/webhook', async (req, res) => {
       console.log('⚠️ No se pudo guardar mensaje entrante:', error.message);
     }
 
-    // Obtener memoria de conversación para este número
-    const memory = getOrCreateMemory(telefonoLimpio);
+    // Obtener historial de conversación para este número
+    const chatHistory = getOrCreateHistory(telefonoLimpio);
     
-    // Guardar mensaje del cliente en la memoria usando saveContext
-    await memory.saveContext({ input: Body }, { output: "" });
+    // Agregar mensaje del cliente al historial
+    chatHistory.push({ role: "human", content: Body });
+
+    // Formatear historial para el agente
+    const formattedHistory = formatChatHistory(chatHistory);
 
     const agentResult = await lavanderiaAgent.invoke({
       input: Body.trim(),
-      telefono: telefonoLimpio
-    }, {
-      callbacks: [memory]
+      telefono: telefonoLimpio,
+      chat_history: formattedHistory
     });
 
     console.log("🟡 agentResponse:", agentResult);
@@ -200,8 +202,8 @@ app.post('/webhook', async (req, res) => {
     let responseText = agentResult.output || "No se pudo procesar la consulta.";
     console.log(`📤 Respuesta: ${responseText.substring(0, 50)}...`);
     
-    // Guardar respuesta del agente en la memoria usando saveContext
-    await memory.saveContext({ input: Body }, { output: responseText });
+    // Agregar respuesta del agente al historial
+    chatHistory.push({ role: "ai", content: responseText });
     
     // Aplicar sanitización
     responseText = sanitizarRespuesta(responseText);
