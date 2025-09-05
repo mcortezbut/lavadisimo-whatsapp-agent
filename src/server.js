@@ -5,7 +5,7 @@ import { initializeAgent } from './agent/manager.js';
 import { guardarConversacionTool } from './agent/tools/memoriaTool.js';
 import { ConsoleCallbackHandler } from "@langchain/core/tracers/console";
 import dotenv from 'dotenv';
-import { ConversationBufferMemory } from "langchain/memory";
+import { ConversationBufferMemory } from "langchain";
 
 // Cargar variables de entorno desde .env
 dotenv.config();
