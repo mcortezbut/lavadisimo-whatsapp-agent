@@ -5,7 +5,7 @@ import { initializeAgent } from './agent/manager.js';
 import { guardarConversacionTool } from './agent/tools/memoriaTool.js';
 import { ConsoleCallbackHandler } from "@langchain/core/tracers/console";
 import dotenv from 'dotenv';
-import { ConversationBufferMemory } from "langchain";
+import { BufferMemory } from "langchain/memory";
 
 // Cargar variables de entorno desde .env
 dotenv.config();
@@ -28,7 +28,7 @@ const conversationMemories = new Map();
 // Función para obtener o crear memoria de conversación
 function getOrCreateMemory(telefono) {
   if (!conversationMemories.has(telefono)) {
-    conversationMemories.set(telefono, new ConversationBufferMemory({
+    conversationMemories.set(telefono, new BufferMemory({
       memoryKey: "chat_history",
       returnMessages: true,
       inputKey: "input"
