@@ -87,11 +87,9 @@ const sinonimos = {
 
 // Función para normalizar medidas (2x3 → 2 M. X 3 M.) con soporte para puntos y comas
 function normalizarMedidas(texto) {
-  // Patrón más robusto para detectar medidas con diferentes separadores
   const patronMedidas = /(\d+(?:[.,]\d+)?)\s*[xX×]\s*(\d+(?:[.,]\d+)?)/g;
   
   return texto.replace(patronMedidas, (match, ancho, largo) => {
-    // Normalizar a formato de base de datos (usar comas)
     const anchoNorm = ancho.replace('.', ',');
     const largoNorm = largo.replace('.', ',');
     return `${anchoNorm} M. X ${largoNorm} M.`;
@@ -100,22 +98,17 @@ function normalizarMedidas(texto) {
 
 // Función para extraer y normalizar medidas de cualquier formato
 function extraerYNormalizarMedidas(texto) {
-  // Primero, normalizar el texto completo
   const textoNormalizado = normalizarMedidas(texto);
-  
-  // Extraer medidas específicas después de normalización
   const patronMedidas = /(\d+[.,]\d+)\s*M\.\s*X\s*(\d+[.,]\d+)\s*M\./;
   const match = textoNormalizado.match(patronMedidas);
   
   if (match) {
     return `${match[1]} M. X ${match[2]} M.`;
   }
-  
-  // Si no se encuentra con el patrón normalizado, intentar extraer de frases
   return extraerMedidasDeFrase(texto);
 }
 
-// Función para parsear medidas en valores numéricos (soporta enteros y decimales)
+// Función para parsear medidas en valores numéricos
 function parsearMedidasANumeros(medidaStr) {
   const patron = /(\d+(?:[.,]\d+)?)\s*M\.\s*X\s*(\d+(?:[.,]\d+)?)\s*M\./;
   const match = medidaStr.match(patron);
@@ -128,14 +121,13 @@ function parsearMedidasANumeros(medidaStr) {
   return null;
 }
 
-// Función para encontrar la medida más cercana en la base de datos con timeout
+// Función para encontrar la medida más cercana en la base de datos
 async function encontrarMedidaCercana(anchoTarget, largoTarget) {
   try {
     if (!datasource.isInitialized) {
       await datasource.initialize();
     }
 
-    // Obtener alfombras con medidas (limitado para performance)
     const productos = await datasource.query(`
       SELECT TOP 20 pt.NOMPROD, pt.PRECIO
       FROM PRODUCTOS pt
@@ -156,7 +148,6 @@ async function encontrarMedidaCercana(anchoTarget, largoTarget) {
         const diferenciaLargo = Math.abs(medidas.largo - largoTarget);
         const diferenciaTotal = diferenciaAncho + diferenciaLargo;
 
-        // Preferir coincidencias exactas o muy cercanas (diferencia < 0.5)
         if (diferenciaTotal < menorDiferencia || (diferenciaTotal < 0.5 && menorDiferencia >= 0.5)) {
           menorDiferencia = diferenciaTotal;
           mejorMatch = prod;
@@ -164,8 +155,7 @@ async function encontrarMedidaCercana(anchoTarget, largoTarget) {
       }
     }
 
-    // Solo devolver si la diferencia es pequeña (menos de 1.0 en total)
-    if (mejorMatch && menorDiferencia < 1.0) {
+    if (mejorMatch && menorDiferencia < 2.0) {
       return mejorMatch;
     }
     return null;
@@ -175,29 +165,21 @@ async function encontrarMedidaCercana(anchoTarget, largoTarget) {
   }
 }
 
-// Función para extraer medidas específicas de frases - EXTRA ROBUSTA
+// Función para extraer medidas específicas de frases
 function extraerMedidasDeFrase(texto) {
-  // Primero, intentar encontrar cualquier patrón de medidas en el texto
   const patronGeneral = /(\d+(?:[.,]\d+)?)\s*[xX×]\s*(\d+(?:[.,]\d+)?)/g;
   const matches = [...texto.matchAll(patronGeneral)];
   
   if (matches.length > 0) {
-    // Tomar la primera coincidencia de medidas
     const match = matches[0];
     const ancho = match[1].replace('.', ',');
     const largo = match[2].replace('.', ',');
     return `${ancho} M. X ${largo} M.`;
   }
   
-  // Si no se encuentra con el patrón general, intentar con patrones contextuales
   const patronesContextuales = [
-    // "la de 1,3 x 1,9" - incluso con palabras intermedias
     /(?:la|el|de|una|un).*?(\d+(?:[.,]\d+)?)\s*[xX×]\s*(\d+(?:[.,]\d+)?)/i,
-    
-    // "medida 1,3x1,9" o "tamaño 1.3x1.9" con palabras antes
     /(?:medidas?|tamaño|dimensiones?).*?(\d+(?:[.,]\d+)?)\s*[xX×]\s*(\d+(?:[.,]\d+)?)/i,
-    
-    // "cuanto vale 1,3x1,9" con palabras alrededor
     /(?:cuanto|cual|precio|valor).*?(?:vale|es|de|para).*?(\d+(?:[.,]\d+)?)\s*[xX×]\s*(\d+(?:[.,]\d+)?)/i
   ];
   
@@ -213,6 +195,64 @@ function extraerMedidasDeFrase(texto) {
   return null;
 }
 
+// Función para extraer variantes de una lista de nombres de productos
+function extraerVariantes(nombresProductos) {
+  if (nombresProductos.length === 0) return { base: null, variantes: [] };
+
+  // Encontrar el prefijo común más largo
+  let prefijoComun = nombresProductos[0];
+  for (let i = 1; i < nombresProductos.length; i++) {
+    const nombreActual = nombresProductos[i];
+    let j = 0;
+    while (j < prefijoComun.length && j < nombreActual.length && 
+           prefijoComun[j] === nombreActual[j]) {
+      j++;
+    }
+    prefijoComun = prefijoComun.substring(0, j);
+  }
+
+  // Limpiar el prefijo común
+  prefijoComun = prefijoComun.replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑ\s]+$/, '').trim();
+
+  // Extraer las variantes de cada nombre
+  const variantes = nombresProductos.map(nombre => {
+    const variante = nombre.replace(prefijoComun, '').trim();
+    return variante.replace(/[\$\.,:;0-9]+/g, '').trim();
+  }).filter(v => v.length > 0);
+
+  // Si no encontramos variantes significativas, buscar por palabras clave comunes
+  if (variantes.length === 0 || variantes.every(v => v === variantes[0])) {
+    const palabrasComunes = ['PEQUEÑA', 'MEDIANA', 'GRANDE', 'CHICA', 'EXTRA', 'XL', 'L', 'M', 'S'];
+    const variantesPorPalabra = new Set();
+    
+    nombresProductos.forEach(nombre => {
+      palabrasComunes.forEach(palabra => {
+        if (nombre.includes(palabra)) {
+          variantesPorPalabra.add(palabra);
+        }
+      });
+    });
+
+    if (variantesPorPalabra.size > 0) {
+      return {
+        base: prefijoComun,
+        variantes: Array.from(variantesPorPalabra)
+      };
+    }
+
+    // Si aún no hay variantes, devolver los nombres completos como variantes
+    return {
+      base: '',
+      variantes: nombresProductos
+    };
+  }
+
+  return {
+    base: prefijoComun,
+    variantes: [...new Set(variantes)]
+  };
+}
+
 // Función para expandir términos de búsqueda
 export function expandirBusqueda(termino) {
   let terminoNormalizado = normalizarMedidas(termino);
@@ -220,13 +260,11 @@ export function expandirBusqueda(termino) {
   
   let terminosExpandidos = [termino, terminoNormalizado];
   
-  // Extraer medidas específicas de frases como "la de 2x3"
   const medidaExtraida = extraerMedidasDeFrase(termino);
   if (medidaExtraida) {
     terminosExpandidos.push(medidaExtraida);
   }
   
-  // Buscar sinónimos palabra por palabra
   const palabras = terminoLower.split(/\s+/);
   palabras.forEach(palabra => {
     if (sinonimos[palabra]) {
@@ -234,7 +272,6 @@ export function expandirBusqueda(termino) {
     }
   });
   
-  // Buscar frases completas
   if (sinonimos[terminoLower]) {
     terminosExpandidos = terminosExpandidos.concat(sinonimos[terminoLower]);
   }
@@ -242,30 +279,10 @@ export function expandirBusqueda(termino) {
   return [...new Set(terminosExpandidos)].filter(t => t && t.trim());
 }
 
-// Función para crear búsqueda fuzzy más inteligente
-function crearBusquedaFuzzy(terminos) {
-  const condiciones = [];
-  
-  terminos.forEach((termino, index) => {
-    // Búsqueda exacta
-    condiciones.push(`pt.NOMPROD LIKE '%' + @${index} + '%'`);
-    
-    // Para medidas, también buscar sin espacios y con variaciones
-    if (termino.includes('M. X')) {
-      const sinEspacios = termino.replace(/\s+/g, '');
-      const conGuion = termino.replace(' X ', '-');
-      condiciones.push(`pt.NOMPROD LIKE '%${sinEspacios}%'`);
-      condiciones.push(`pt.NOMPROD LIKE '%${conGuion}%'`);
-    }
-  });
-  
-  return condiciones.join(' OR ');
-}
-
 // Crear la herramienta usando DynamicStructuredTool
 const precioTool = new DynamicStructuredTool({
   name: "consultar_precio",
-  description: "Consulta precios de servicios de lavandería. Puede mostrar múltiples variantes y opciones disponibles para ayudar al cliente a elegir el servicio más adecuado. Reconoce sinónimos y abreviaciones comunes.",
+  description: "Consulta precios de servicios. Solo muestra precios si hay una única coincidencia. Si hay múltiples coincidencias, extrae variantes y pregunta al cliente.",
   schema: paramsSchema,
   func: async ({ producto, telefono }) => {
     try {
@@ -284,47 +301,22 @@ const precioTool = new DynamicStructuredTool({
       let condicionesBusqueda;
       let parametrosBusqueda;
       
-      // INTELIGENCIA MEJORADA: Buscar por similitud numérica para medidas
+      // Búsqueda inteligente para medidas
       if (tieneMedidasEspecificas) {
-        // Intentar extraer medidas numéricas para búsqueda inteligente
         const medidaExtraida = extraerMedidasDeFrase(producto);
         if (medidaExtraida) {
           const medidas = parsearMedidasANumeros(medidaExtraida);
           if (medidas) {
             const productoMasCercano = await encontrarMedidaCercana(medidas.ancho, medidas.largo);
             if (productoMasCercano) {
-              // Si encontramos una medida cercana, devolver solo ese producto
               return `${productoMasCercano.NOMPROD}: $${parseInt(productoMasCercano.PRECIO).toLocaleString('es-CL')}`;
             }
           }
         }
         
-        // Si no se encuentra medida cercana, buscar productos generales de alfombra
-        // en lugar de hacer búsqueda por texto con las medidas (para evitar inventar productos)
-        const productosGenerales = await datasource.query(`
-          SELECT TOP 5
-            pt.NOMPROD, 
-            pt.PRECIO,
-            c.NOMCAT as CATEGORIA
-          FROM PRODUCTOS pt
-          INNER JOIN (SELECT idprod, MAX(fechaupdate) AS maxdate FROM productos WHERE idusuario = 'lavadisimo' GROUP BY idprod) mt
-          ON pt.FECHAUPDATE = mt.maxdate AND pt.IDPROD = mt.IDPROD
-          LEFT JOIN CATEGORIAS c ON pt.IDGRUPO = c.IDGRUPO
-          WHERE pt.NULO = 0 AND pt.IDUSUARIO = 'lavadisimo'
-            AND pt.NOMPROD LIKE '%alfombra%'
-          ORDER BY pt.PRECIO
-        `);
-
-        if (productosGenerales.length > 0) {
-          let respuesta = `No encontré una alfombra con medidas cercanas a ${medidaExtraida}. ¿Te interesa alguna de estas opciones?\n\n`;
-          productosGenerales.forEach((prod, index) => {
-            respuesta += `${index + 1}. ${prod.NOMPROD}: $${parseInt(prod.PRECIO).toLocaleString('es-CL')}\n`;
-          });
-          respuesta += `\nPuedes especificar las medidas exactas que necesitas.`;
-          return respuesta;
-        }
-
-        return `No encontré alfombras con medidas cercanas a ${medidaExtraida}. ¿Podrías especificar otras medidas o consultar nuestros servicios generales de alfombra?`;
+        // Si no se encuentra medida cercana, buscar productos generales
+        condicionesBusqueda = `pt.NOMPROD LIKE '%' + @0 + '%'`;
+        parametrosBusqueda = [producto.split(' ')[0]]; // Usar primera palabra para búsqueda general
       } else {
         // Búsqueda general - usar OR para términos expandidos
         condicionesBusqueda = terminosExpandidos.map((_, index) => 
@@ -333,31 +325,9 @@ const precioTool = new DynamicStructuredTool({
         parametrosBusqueda = terminosExpandidos;
       }
       
-      // Determinar ordenamiento según tipo de búsqueda
-      let ordenamiento = `
-        ORDER BY 
-          CASE WHEN pt.NOMPROD LIKE @0 + '%' THEN 1 ELSE 2 END,
-          LEN(pt.NOMPROD),
-          pt.PRECIO
-      `;
-      
-      if (tieneMedidasEspecificas) {
-        // Para medidas específicas, priorizar productos que contengan medidas
-        ordenamiento = `
-          ORDER BY 
-            CASE 
-              WHEN pt.NOMPROD LIKE '% M. X % M.%' THEN 1
-              ELSE 2 
-            END,
-            CASE WHEN pt.NOMPROD LIKE @0 + '%' THEN 1 ELSE 2 END,
-            LEN(pt.NOMPROD),
-            pt.PRECIO
-        `;
-      }
-      
       // Buscar productos que coincidan con los términos
       const productos = await datasource.query(`
-        SELECT TOP ${tieneMedidasEspecificas ? '5' : '15'} 
+        SELECT TOP 20
           pt.IDPROD,
           pt.NOMPROD, 
           pt.PRECIO,
@@ -369,128 +339,42 @@ const precioTool = new DynamicStructuredTool({
         WHERE (${condicionesBusqueda})
           AND pt.NULO = 0
           AND pt.IDUSUARIO = 'lavadisimo'
-        ${ordenamiento}
+        ORDER BY 
+          CASE WHEN pt.NOMPROD LIKE @0 + '%' THEN 1 ELSE 2 END,
+          LEN(pt.NOMPROD),
+          pt.PRECIO
       `, parametrosBusqueda);
 
       if (productos.length === 0) {
-        // Si no encuentra nada, buscar en categorías
-        const categorias = await datasource.query(`
-          SELECT DISTINCT c.NOMCAT
-          FROM CATEGORIAS c
-          WHERE c.NOMCAT LIKE '%' + @0 + '%'
-        `, [producto]);
-
-        if (categorias.length > 0) {
-          const categoria = categorias[0].NOMCAT;
-          const productosCategoria = await datasource.query(`
-            SELECT TOP 5
-              pt.NOMPROD, 
-              pt.PRECIO,
-              c.NOMCAT as CATEGORIA
-            FROM PRODUCTOS pt
-            INNER JOIN (SELECT idprod, MAX(fechaupdate) AS maxdate FROM productos WHERE idusuario = 'lavadisimo' GROUP BY idprod) mt
-            ON pt.FECHAUPDATE = mt.maxdate AND pt.IDPROD = mt.IDPROD
-            INNER JOIN CATEGORIAS c ON pt.IDGRUPO = c.IDGRUPO
-            WHERE c.NOMCAT = @0 AND pt.NULO = 0 AND pt.IDUSUARIO = 'lavadisimo'
-            ORDER BY pt.PRECIO
-          `, [categoria]);
-
-          if (productosCategoria.length > 0) {
-            let respuesta = `Encontré servicios en la categoría "${categoria}":\n\n`;
-            productosCategoria.forEach((prod, index) => {
-              respuesta += `${index + 1}. ${prod.NOMPROD}: $${parseInt(prod.PRECIO).toLocaleString('es-CL')}\n`;
-            });
-            respuesta += `\n¿Te interesa alguno de estos servicios específicamente?`;
-            return respuesta;
-          }
-        }
-
-        return `No encontré servicios que coincidan con "${producto}". ¿Podrías ser más específico? Por ejemplo: "poltrona", "cortina", "cobertor", "alfombra", etc.`;
+        return `No encontré servicios que coincidan con "${producto}". ¿Podrías ser más específico?`;
       }
 
-      // Si encuentra solo un producto
+      // Si encuentra solo un producto - mostrar precio
       if (productos.length === 1) {
         const prod = productos[0];
-        let respuesta = `${prod.NOMPROD}: $${parseInt(prod.PRECIO).toLocaleString('es-CL')}`;
+        return `${prod.NOMPROD}: $${parseInt(prod.PRECIO).toLocaleString('es-CL')}`;
+      }
+
+      // Si encuentra múltiples productos - extraer variantes y preguntar
+      const { base, variantes } = extraerVariantes(productos.map(p => p.NOMPROD));
+      
+      if (variantes.length > 0) {
+        let respuesta = `Encontré varias opciones para ${base || producto}. ¿A cuál te refieres?\n\n`;
         
-        if (prod.CATEGORIA) {
-          respuesta += ` (${prod.CATEGORIA})`;
-        }
-
-        // Buscar productos relacionados o similares (solo si existen)
-        const similares = await datasource.query(`
-          SELECT TOP 3
-            pt.NOMPROD, 
-            pt.PRECIO
-          FROM PRODUCTOS pt
-          INNER JOIN (SELECT idprod, MAX(fechaupdate) AS maxdate FROM productos WHERE idusuario = 'lavadisimo' GROUP BY idprod) mt
-          ON pt.FECHAUPDATE = mt.maxdate AND pt.IDPROD = mt.IDPROD
-          LEFT JOIN CATEGORIAS c ON pt.IDGRUPO = c.IDGRUPO
-          WHERE pt.IDPROD != @0 
-            AND (pt.IDGRUPO = @1 OR pt.NOMPROD LIKE '%' + @2 + '%')
-            AND pt.NULO = 0
-            AND pt.IDUSUARIO = 'lavadisimo'
-          ORDER BY pt.PRECIO
-        `, [prod.IDPROD, prod.IDGRUPO || 0, producto.split(' ')[0]]);
-
-        if (similares.length > 0) {
-          respuesta += `\n\nTambién tenemos:\n`;
-          similares.forEach((sim, index) => {
-            respuesta += `• ${sim.NOMPROD}: $${parseInt(sim.PRECIO).toLocaleString('es-CL')}\n`;
-          });
-        }
-
-        // Respuesta 100% específica sin inventar información
-        respuesta += `\n¿Te gustaría agendar este servicio?`;
+        variantes.forEach((variante, index) => {
+          respuesta += `${index + 1}. ${variante}\n`;
+        });
+        
+        respuesta += `\nPor favor, especifica cuál necesitas.`;
         return respuesta;
       }
 
-      // Si encuentra múltiples productos (el caso más común)
-      let respuesta = `Tenemos varias opciones para "${producto}":\n\n`;
-      
-      // Agrupar por categoría si es posible
-      const porCategoria = {};
-      productos.forEach(prod => {
-        const cat = prod.CATEGORIA || 'Otros servicios';
-        if (!porCategoria[cat]) {
-          porCategoria[cat] = [];
-        }
-        porCategoria[cat].push(prod);
-      });
-
-      // Si hay múltiples categorías, mostrar agrupado
-      if (Object.keys(porCategoria).length > 1) {
-        Object.keys(porCategoria).forEach(categoria => {
-          respuesta += `**${categoria}:**\n`;
-          porCategoria[categoria].forEach(prod => {
-            respuesta += `• ${prod.NOMPROD}: $${parseInt(prod.PRECIO).toLocaleString('es-CL')}\n`;
-          });
-          respuesta += `\n`;
-        });
-      } else {
-        // Si es una sola categoría, mostrar lista simple
-        productos.forEach((prod, index) => {
-          respuesta += `${index + 1}. ${prod.NOMPROD}: $${parseInt(prod.PRECIO).toLocaleString('es-CL')}\n`;
-        });
-      }
-
-      // Agregar precio más económico y más caro
-      const precios = productos.map(p => parseInt(p.PRECIO));
-      const minPrecio = Math.min(...precios);
-      const maxPrecio = Math.max(...precios);
-
-      if (minPrecio !== maxPrecio) {
-        respuesta += `\nRango de precios: desde $${minPrecio.toLocaleString('es-CL')} hasta $${maxPrecio.toLocaleString('es-CL')}\n`;
-      }
-
-      respuesta += `\n¿Cuál de estas opciones te interesa más? Puedo darte más detalles sobre cualquiera de ellas.`;
-
-      return respuesta;
+      // Fallback si no se pueden extraer variantes
+      return `Encontré varias opciones para "${producto}". Por favor, sé más específico sobre qué tipo necesitas.`;
 
     } catch (error) {
       console.error("Error en precioTool:", error);
       
-      // Intentar cerrar la conexión si hay problemas
       if (datasource.isInitialized) {
         try {
           await datasource.destroy();
@@ -499,7 +383,6 @@ const precioTool = new DynamicStructuredTool({
         }
       }
       
-      // Mensaje más específico según el tipo de error
       if (error.code === 'ESOCKET' || error.message.includes('socket hang up')) {
         return "Hay un problema temporal con la conexión a la base de datos. Por favor, intenta nuevamente en unos momentos.";
       } else if (error.message.includes('timeout')) {
