@@ -6,7 +6,7 @@ import { DynamicStructuredTool } from "@langchain/core/tools";
 const paramsSchema = z.object({
   producto: z.string().min(2, "Mínimo 2 caracteres"),
   telefono: z.string().optional(),
-  historialChat: z.array(z.any()).optional()
+  historialChat: z.array(z.string()).optional()
 });
 
 const datasource = new DataSource({
