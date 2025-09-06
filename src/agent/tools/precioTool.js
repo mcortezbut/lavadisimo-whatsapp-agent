@@ -378,29 +378,37 @@ const precioTool = new DynamicStructuredTool({
             productoModificado = `${contexto} ${tamaño}`;
             console.log(`🔍 Contexto con tamaño: ${productoModificado} desde historial`);
             
-            // Expandir términos de tamaño para incluir sinónimos (ej: "mediana" → ["mediana", "TALLA M"])
+            // Expandir términos de contexto y tamaño para incluir sinónimos
+            const terminosContexto = expandirBusqueda(contexto);
             const terminosTamaño = expandirBusqueda(tamaño);
-            const condicionesTamaño = terminosTamaño.map((_, index) => 
-              `pt.NOMPROD LIKE '%' + @${index + 1} + '%'`
+            
+            const condicionesContexto = terminosContexto.map((_, index) => 
+              `pt.NOMPROD LIKE '%' + @${index} + '%'`
             ).join(' OR ');
             
-            // Buscar productos que coincidan con contexto Y cualquier término de tamaño
-            const parametrosBusqueda = [contexto, ...terminosTamaño];
+            const condicionesTamaño = terminosTamaño.map((_, index) => 
+              `pt.NOMPROD LIKE '%' + @${index + terminosContexto.length} + '%'`
+            ).join(' OR ');
+            
+            // Buscar productos que coincidan con cualquier término de contexto Y cualquier término de tamaño
+            const parametrosBusqueda = [...terminosContexto, ...terminosTamaño];
             const productosEspecificos = await datasource.query(`
               SELECT TOP 5 pt.NOMPROD, pt.PRECIO
               FROM PRODUCTOS pt
               INNER JOIN (SELECT idprod, MAX(fechaupdate) AS maxdate FROM productos WHERE idusuario = 'lavadisimo' GROUP BY idprod) mt
               ON pt.FECHAUPDATE = mt.maxdate AND pt.IDPROD = mt.IDPROD
               WHERE pt.NULO = 0 AND pt.IDUSUARIO = 'lavadisimo'
-                AND pt.NOMPROD LIKE '%' + @0 + '%' 
+                AND (${condicionesContexto})
                 AND (${condicionesTamaño})
               ORDER BY pt.FECHAUPDATE DESC
             `, parametrosBusqueda);
             
-            if (productosEspecificos.length === 1) {
+            if (productosEspecificos.length === 0) {
+              return `No encontré una ${contexto} ${tamaño} específica. ¿Podrías ser más específico o verificar si existe en nuestro catálogo?`;
+            } else if (productosEspecificos.length === 1) {
               const prod = productosEspecificos[0];
               return `${prod.NOMPROD}: $${parseInt(prod.PRECIO).toLocaleString('es-CL')}`;
-            } else if (productosEspecificos.length > 1) {
+            } else {
               // Si hay múltiples, extraer variantes y preguntar
               const { base, variantes } = extraerVariantes(productosEspecificos.map(p => p.NOMPROD));
               if (variantes.length > 0) {
@@ -410,6 +418,9 @@ const precioTool = new DynamicStructuredTool({
                 });
                 respuesta += `\nPor favor, especifica cuál necesitas.`;
                 return respuesta;
+              } else {
+                // Fallback si no se pueden extraer variantes
+                return `Encontré varias opciones para "${contexto} ${tamaño}". Por favor, sé más específico sobre qué tipo necesitas.`;
               }
             }
           } else {
