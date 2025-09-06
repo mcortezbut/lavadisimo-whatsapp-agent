@@ -121,13 +121,34 @@ function parsearMedidasANumeros(medidaStr) {
   return null;
 }
 
-// Función para encontrar la medida más cercana en la base de datos
+// Función para encontrar la medida más cercana en la base de datos con búsqueda exacta
 async function encontrarMedidaCercana(anchoTarget, largoTarget) {
   try {
     if (!datasource.isInitialized) {
       await datasource.initialize();
     }
 
+    // Primero buscar coincidencia exacta
+    const productosExactos = await datasource.query(`
+      SELECT TOP 10 pt.NOMPROD, pt.PRECIO
+      FROM PRODUCTOS pt
+      INNER JOIN (SELECT idprod, MAX(fechaupdate) AS maxdate FROM productos WHERE idusuario = 'lavadisimo' GROUP BY idprod) mt
+      ON pt.FECHAUPDATE = mt.maxdate AND pt.IDPROD = mt.IDPROD
+      WHERE pt.NULO = 0 AND pt.IDUSUARIO = 'lavadisimo'
+        AND pt.NOMPROD LIKE '% M. X % M.%'
+        AND (
+          pt.NOMPROD LIKE '%${anchoTarget.toFixed(1).replace('.', ',')}%' 
+          AND pt.NOMPROD LIKE '%${largoTarget.toFixed(1).replace('.', ',')}%'
+        )
+      ORDER BY pt.FECHAUPDATE DESC, pt.PRECIO
+    `);
+
+    // Si encontramos coincidencias exactas, devolver la más reciente
+    if (productosExactos.length > 0) {
+      return productosExactos[0];
+    }
+
+    // Si no hay coincidencia exacta, buscar la más cercana
     const productos = await datasource.query(`
       SELECT TOP 20 pt.NOMPROD, pt.PRECIO
       FROM PRODUCTOS pt
@@ -148,14 +169,16 @@ async function encontrarMedidaCercana(anchoTarget, largoTarget) {
         const diferenciaLargo = Math.abs(medidas.largo - largoTarget);
         const diferenciaTotal = diferenciaAncho + diferenciaLargo;
 
-        if (diferenciaTotal < menorDiferencia || (diferenciaTotal < 0.5 && menorDiferencia >= 0.5)) {
+        // Preferir coincidencias exactas o muy cercanas
+        if (diferenciaTotal < menorDiferencia) {
           menorDiferencia = diferenciaTotal;
           mejorMatch = prod;
         }
       }
     }
 
-    if (mejorMatch && menorDiferencia < 2.0) {
+    // Solo devolver si la diferencia es pequeña (menos de 0.3 en total para mayor precisión)
+    if (mejorMatch && menorDiferencia < 0.3) {
       return mejorMatch;
     }
     return null;
