@@ -352,14 +352,24 @@ const precioTool = new DynamicStructuredTool({
   name: "consultar_precio",
   description: "Consulta precios de servicios. Solo muestra precios si hay una única coincidencia. Si hay múltiples coincidencias, extrae variantes y pregunta al cliente.",
   schema: paramsSchema,
-  func: async ({ producto, telefono }) => {
+  func: async ({ producto, telefono, historialChat }) => {
     try {
       if (!datasource.isInitialized) {
         await datasource.initialize();
       }
 
+      // Si es una respuesta corta que necesita contexto, inferir el producto del historial
+      let productoModificado = producto;
+      if (esRespuestaCortaNecesitaContexto(producto, historialChat)) {
+        const contexto = extraerContextoDelHistorial(historialChat);
+        if (contexto) {
+          productoModificado = `${contexto} ${producto}`;
+          console.log(`🔍 Contexto inferido: ${productoModificado} desde historial`);
+        }
+      }
+
       // Expandir términos de búsqueda usando sinónimos
-      const terminosExpandidos = expandirBusqueda(producto);
+      const terminosExpandidos = expandirBusqueda(productoModificado);
       
       // Detectar si la búsqueda incluye medidas específicas
       const tieneMedidasEspecificas = terminosExpandidos.some(termino => 
