@@ -371,8 +371,45 @@ const precioTool = new DynamicStructuredTool({
       if (esRespuestaCortaNecesitaContexto(producto, historialChat)) {
         const contexto = extraerContextoDelHistorial(historialChat);
         if (contexto) {
-          productoModificado = `${contexto} ${producto}`;
-          console.log(`🔍 Contexto inferido: ${productoModificado} desde historial`);
+          // Extraer palabras de tamaño del producto actual
+          const palabrasTamaño = producto.match(/(mediana|pequeña|grande|xl|l|m|s|especial)/i);
+          if (palabrasTamaño && palabrasTamaño[0]) {
+            const tamaño = palabrasTamaño[0].toLowerCase();
+            productoModificado = `${contexto} ${tamaño}`;
+            console.log(`🔍 Contexto con tamaño: ${productoModificado} desde historial`);
+            
+            // Buscar directamente el producto con contexto y tamaño (usando AND para ambos términos)
+            const productosEspecificos = await datasource.query(`
+              SELECT TOP 5 pt.NOMPROD, pt.PRECIO
+              FROM PRODUCTOS pt
+              INNER JOIN (SELECT idprod, MAX(fechaupdate) AS maxdate FROM productos WHERE idusuario = 'lavadisimo' GROUP BY idprod) mt
+              ON pt.FECHAUPDATE = mt.maxdate AND pt.IDPROD = mt.IDPROD
+              WHERE pt.NULO = 0 AND pt.IDUSUARIO = 'lavadisimo'
+                AND pt.NOMPROD LIKE '%' + @0 + '%' 
+                AND pt.NOMPROD LIKE '%' + @1 + '%'
+              ORDER BY pt.FECHAUPDATE DESC
+            `, [contexto, tamaño]);
+            
+            if (productosEspecificos.length === 1) {
+              const prod = productosEspecificos[0];
+              return `${prod.NOMPROD}: $${parseInt(prod.PRECIO).toLocaleString('es-CL')}`;
+            } else if (productosEspecificos.length > 1) {
+              // Si hay múltiples, extraer variantes y preguntar
+              const { base, variantes } = extraerVariantes(productosEspecificos.map(p => p.NOMPROD));
+              if (variantes.length > 0) {
+                let respuesta = `Encontré varias opciones para ${base || contexto}. ¿A cuál te refieres?\n\n`;
+                variantes.forEach((variante, index) => {
+                  respuesta += `${index + 1}. ${variante}\n`;
+                });
+                respuesta += `\nPor favor, especifica cuál necesitas.`;
+                return respuesta;
+              }
+            }
+          } else {
+            // Si no tiene tamaño, usar el contexto normalmente
+            productoModificado = `${contexto} ${producto}`;
+            console.log(`🔍 Contexto inferido: ${productoModificado} desde historial`);
+          }
         }
       }
 
