@@ -378,7 +378,14 @@ const precioTool = new DynamicStructuredTool({
             productoModificado = `${contexto} ${tamaño}`;
             console.log(`🔍 Contexto con tamaño: ${productoModificado} desde historial`);
             
-            // Buscar directamente el producto con contexto y tamaño (usando AND para ambos términos)
+            // Expandir términos de tamaño para incluir sinónimos (ej: "mediana" → ["mediana", "TALLA M"])
+            const terminosTamaño = expandirBusqueda(tamaño);
+            const condicionesTamaño = terminosTamaño.map((_, index) => 
+              `pt.NOMPROD LIKE '%' + @${index + 1} + '%'`
+            ).join(' OR ');
+            
+            // Buscar productos que coincidan con contexto Y cualquier término de tamaño
+            const parametrosBusqueda = [contexto, ...terminosTamaño];
             const productosEspecificos = await datasource.query(`
               SELECT TOP 5 pt.NOMPROD, pt.PRECIO
               FROM PRODUCTOS pt
@@ -386,9 +393,9 @@ const precioTool = new DynamicStructuredTool({
               ON pt.FECHAUPDATE = mt.maxdate AND pt.IDPROD = mt.IDPROD
               WHERE pt.NULO = 0 AND pt.IDUSUARIO = 'lavadisimo'
                 AND pt.NOMPROD LIKE '%' + @0 + '%' 
-                AND pt.NOMPROD LIKE '%' + @1 + '%'
+                AND (${condicionesTamaño})
               ORDER BY pt.FECHAUPDATE DESC
-            `, [contexto, tamaño]);
+            `, parametrosBusqueda);
             
             if (productosEspecificos.length === 1) {
               const prod = productosEspecificos[0];
