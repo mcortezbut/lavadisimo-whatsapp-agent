@@ -5,7 +5,8 @@ import { DynamicStructuredTool } from "@langchain/core/tools";
 // Schema Zod para validación
 const paramsSchema = z.object({
   producto: z.string().min(2, "Mínimo 2 caracteres"),
-  telefono: z.string().optional()
+  telefono: z.string().optional(),
+  historialChat: z.array(z.any()).optional()
 });
 
 const datasource = new DataSource({
@@ -216,6 +217,50 @@ function extraerMedidasDeFrase(texto) {
   }
   
   return null;
+}
+
+// Función para extraer el contexto del historial de chat
+function extraerContextoDelHistorial(historialChat = []) {
+  if (!historialChat || historialChat.length === 0) return null;
+  
+  // Buscar en el historial las últimas menciones de productos
+  const productosClave = ['poltrona', 'alfombra', 'cortina', 'chaqueta', 'pantalon', 'blusa', 'cobertor'];
+  
+  // Recorrer el historial de más reciente a más antiguo
+  for (let i = historialChat.length - 1; i >= 0; i--) {
+    const mensaje = historialChat[i];
+    const contenido = typeof mensaje === 'object' ? mensaje.content : mensaje;
+    
+    if (typeof contenido === 'string') {
+      for (const producto of productosClave) {
+        if (contenido.toLowerCase().includes(producto)) {
+          return producto;
+        }
+      }
+    }
+  }
+  
+  return null;
+}
+
+// Función para detectar si es una respuesta corta que necesita contexto
+function esRespuestaCortaNecesitaContexto(texto, historialChat = []) {
+  const textoLimpio = texto.toLowerCase().trim();
+  
+  // Palabras que indican respuestas cortas a preguntas previas
+  const indicadoresRespuestaCorta = [
+    'es', 'es una', 'es un', 'la', 'el', 'una', 'un', 
+    'mediana', 'pequeña', 'grande', 'xl', 'l', 'm', 's'
+  ];
+  
+  const esRespuestaCorta = indicadoresRespuestaCorta.some(indicator => 
+    textoLimpio === indicator || textoLimpio.startsWith(indicator + ' ')
+  );
+  
+  if (!esRespuestaCorta) return false;
+  
+  // Verificar si hay contexto en el historial
+  return extraerContextoDelHistorial(historialChat) !== null;
 }
 
 // Función para extraer variantes de una lista de nombres de productos
