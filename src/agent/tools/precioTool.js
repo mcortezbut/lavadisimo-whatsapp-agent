@@ -83,7 +83,15 @@ const sinonimos = {
   "coche bebé": ["COCHE"],
   "carrito": ["COCHE"],
   "carrito de bebé": ["COCHE"],
-  "cochecito": ["COCHE"]
+  "cochecito": ["COCHE"],
+  
+  // Poltronas
+  "poltrona": ["POLTRONA", "POL"],
+  "poltronas": ["POLTRONA", "POL"],
+  "sillón": ["POLTRONA", "SILLON"],
+  "sillones": ["POLTRONA", "SILLON"],
+  "sofá": ["POLTRONA", "SOFA"],
+  "sofas": ["POLTRONA", "SOFA"]
 };
 
 // Función para normalizar medidas (2x3 → 2 M. X 3 M.) con soporte para puntos y comas
@@ -433,27 +441,7 @@ const precioTool = new DynamicStructuredTool({
         return `${prod.NOMPROD}: $${parseInt(prod.PRECIO).toLocaleString('es-CL')}`;
       }
 
-      // Si encuentra múltiples productos, verificar si hay una coincidencia exacta con el producto modificado
-      const queryLower = productoModificado.toLowerCase();
-      
-      // Limpiar la consulta de palabras comunes para mejor matching
-      const palabrasComunes = ['es', 'una', 'un', 'la', 'el', 'de', 'para', 'lavado', 'lavar'];
-      const palabrasQuery = queryLower.split(/\s+/).filter(palabra => !palabrasComunes.includes(palabra));
-      const queryLimpia = palabrasQuery.join(' ').trim();
-      
-      const exactMatch = productos.find(prod => {
-        const nomProdLower = prod.NOMPROD.toLowerCase();
-        // Buscar coincidencia exacta o muy cercana
-        return nomProdLower.includes(queryLimpia) || queryLimpia.includes(nomProdLower) ||
-               nomProdLower.includes(queryLower) || queryLower.includes(nomProdLower);
-      });
-      
-      // Si hay una coincidencia exacta con uno de los productos, mostrar precio directamente
-      if (exactMatch) {
-        return `${exactMatch.NOMPROD}: $${parseInt(exactMatch.PRECIO).toLocaleString('es-CL')}`;
-      }
-      
-      // Si no hay coincidencia exacta, extraer variantes y preguntar
+      // Extraer variantes y preguntar al usuario para seleccionar
       const { base, variantes } = extraerVariantes(productos.map(p => p.NOMPROD));
       
       if (variantes.length > 0) {
