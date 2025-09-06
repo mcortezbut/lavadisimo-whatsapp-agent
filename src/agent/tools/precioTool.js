@@ -403,6 +403,10 @@ const precioTool = new DynamicStructuredTool({
               ORDER BY pt.FECHAUPDATE DESC
             `, parametrosBusqueda);
             
+            // Debug: log los productos encontrados
+            console.log(`🔍 Productos encontrados para contexto "${contexto}" y tamaño "${tamaño}":`, productosEspecificos);
+            console.log(`🔍 Términos de búsqueda: contexto=${JSON.stringify(terminosContexto)}, tamaño=${JSON.stringify(terminosTamaño)}`);
+            
             if (productosEspecificos.length === 0) {
               return `No encontré una ${contexto} ${tamaño} específica. ¿Podrías ser más específico o verificar si existe en nuestro catálogo?`;
             } else if (productosEspecificos.length === 1) {
@@ -411,6 +415,7 @@ const precioTool = new DynamicStructuredTool({
             } else {
               // Si hay múltiples, extraer variantes y preguntar
               const { base, variantes } = extraerVariantes(productosEspecificos.map(p => p.NOMPROD));
+              console.log(`🔍 Variantes extraídas: base=${base}, variantes=${JSON.stringify(variantes)}`);
               if (variantes.length > 0) {
                 let respuesta = `Encontré varias opciones para ${base || contexto}. ¿A cuál te refieres?\n\n`;
                 variantes.forEach((variante, index) => {
