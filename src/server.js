@@ -3,6 +3,7 @@ import twilio from 'twilio';
 const { Twilio } = twilio;
 import { initializeAgent } from './agent/manager.js';
 import { guardarConversacionTool } from './agent/tools/memoriaTool.js';
+import { conversationHistories } from './agent/memory.js';
 import { ConsoleCallbackHandler } from "@langchain/core/tracers/console";
 import { HumanMessage, AIMessage } from "@langchain/core/messages";
 import dotenv from 'dotenv';
@@ -22,10 +23,7 @@ const app = express();
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
-// Almacenamiento de historial de conversación por número de teléfono
-const conversationHistories = new Map();
-
-// Función para obtener o crear historial de conversación
+// Función para obtener o crear historial de conversación (usando el módulo compartido)
 function getOrCreateHistory(telefono) {
   if (!conversationHistories.has(telefono)) {
     conversationHistories.set(telefono, []);
