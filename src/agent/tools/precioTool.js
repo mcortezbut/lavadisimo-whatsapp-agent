@@ -6,7 +6,7 @@ import { DynamicStructuredTool } from "@langchain/core/tools";
 const paramsSchema = z.object({
   producto: z.string().min(2, "Mínimo 2 caracteres"),
   telefono: z.string().optional(),
-  historialChat: z.array(z.string()).optional()
+  historialChat: z.any().optional() // Cambiado a z.any() para aceptar cualquier formato de historial
 });
 
 const datasource = new DataSource({
@@ -386,7 +386,7 @@ function construirRespuestaOpciones(base, variantes) {
 // Crear la herramienta usando DynamicStructuredTool
 const precioTool = new DynamicStructuredTool({
   name: "consultar_precio",
-  description: "Consulta precios de servicios. Solo muestra precios si hay una única coincidencia. Si hay múltiples coincidencias, extrae variantes y pregunta al cliente.",
+  description: "Consulta precios de servicios. Requiere el parámetro 'historialChat' para entender el contexto de la conversación. Solo muestra precios si hay una única coincidencia. Si hay múltiples coincidencias, extrae variantes y pregunta al cliente. SIEMPRE debe recibir 'historialChat' para respuestas contextuales.",
   schema: paramsSchema,
   func: async ({ producto, telefono, historialChat }) => {
     try {
