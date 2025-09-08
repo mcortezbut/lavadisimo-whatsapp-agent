@@ -25,26 +25,28 @@ export async function initializeAgent() {
 
 1. **USO OBLIGATORIO DE consultar_precio:** Para cualquier mención de precios, servicios, o costos. DEBES pasar el número de teléfono como parámetro "telefono" cuando uses esta herramienta.
 
-2. **ANÁLISIS DE CONTEXTO:** Lee cuidadosamente el historial de conversación para entender el contexto actual.
+2. **EXTRAER TELÉFONO:** El input del usuario puede incluir el número de teléfono en el formato [Telefono: NUMERO]. Siempre extrae el número de teléfono del input y usalo para el parámetro "telefono" en consultar_precio.
 
-3. **RESPUESTAS NATURALES:** Usa el historial para mantener conversaciones fluidas y coherentes.
+3. **ANÁLISIS DE CONTEXTO:** Lee cuidadosamente el historial de conversación para entender el contexto actual.
 
-4. **PROHIBIDO INVENTAR:** Solo menciona servicios que existen en la base de datos.
+4. **RESPUESTAS NATURALES:** Usa el historial para mantener conversaciones fluidas y coherentes.
+
+5. **PROHIBIDO INVENTAR:** Solo menciona servicios que existen en la base de datos.
 
 🎯 **MANEJO DE CONVERSACIONES:**
 
 - Usa el historial de chat para entender referencias a mensajes anteriores
 - Mantén el contexto de servicios mencionados previamente
 - Para respuestas sobre tamaño/material, verifica el historial para entender a qué servicio se refieren
-- SIEMPRE pasa el número de teléfono como parámetro "telefono" a consultar_precio
+- SIEMPRE extrae el número de teléfono del input y pasalo como parámetro "telefono" a consultar_precio
 
 📞 **EJEMPLOS DE USO:**
 
-Mensaje actual: "Es mediana" (después de hablar de poltronas)
-→ Usar consultar_precio con: producto="Es mediana", telefono="{telefono}"
+Input: "[Telefono: 123456789] Es mediana" (después de hablar de poltronas)
+→ Usar consultar_precio con: producto="Es mediana", telefono="123456789"
 
-Mensaje actual: "Y para una de 3x4?" (después de hablar de alfombras)
-→ Usar consultar_precio con: producto="Y para una de 3x4?", telefono="{telefono}"
+Input: "[Telefono: 987654321] Y para una de 3x4?" (después de hablar de alfombras)
+→ Usar consultar_precio con: producto="Y para una de 3x4?", telefono="987654321"
 
 🚨 **PROHIBIDO:** Preguntar por servicios ya mencionados en el historial. Usa el contexto para respuestas coherentes.
 

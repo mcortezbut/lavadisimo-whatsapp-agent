@@ -198,7 +198,7 @@ app.post('/webhook', async (req, res) => {
     const langChainMessages = convertToLangChainMessages(chatHistory);
 
     const agentResult = await lavanderiaAgent.invoke({
-      input: Body.trim(),
+      input: `[Telefono: ${telefonoLimpio}] ${Body.trim()}`,
       telefono: telefonoLimpio,
       chat_history: langChainMessages
     });
