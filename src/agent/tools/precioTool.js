@@ -6,8 +6,7 @@ import { getHistoryForContext, conversationHistories } from "../memory.js";
 // Schema Zod para validación
 const paramsSchema = z.object({
   producto: z.string().min(2, "Mínimo 2 caracteres"),
-  telefono: z.string().optional(),
-  historialChat: z.any().optional() // Cambiado a z.any() para aceptar cualquier formato de historial
+  telefono: z.string().min(1, "Número de teléfono requerido para contexto"),
 });
 
 const datasource = new DataSource({
@@ -387,9 +386,9 @@ function construirRespuestaOpciones(base, variantes) {
 // Crear la herramienta usando DynamicStructuredTool
 const precioTool = new DynamicStructuredTool({
   name: "consultar_precio",
-  description: "Consulta precios de servicios. Requiere el parámetro 'historialChat' para entender el contexto de la conversación. Solo muestra precios si hay una única coincidencia. Si hay múltiples coincidencias, extrae variantes y pregunta al cliente. SIEMPRE debe recibir 'historialChat' para respuestas contextuales.",
+  description: "Consulta precios de servicios. Requiere el parámetro 'telefono' para acceder al historial de conversación y entender el contexto. Solo muestra precios si hay una única coincidencia. Si hay múltiples coincidencias, extrae variantes y pregunta al cliente. SIEMPRE debe recibir 'telefono' para respuestas contextuales.",
   schema: paramsSchema,
-  func: async ({ producto, telefono, historialChat }) => {
+  func: async ({ producto, telefono }) => {
     try {
       if (!datasource.isInitialized) {
         await datasource.initialize();
@@ -398,8 +397,8 @@ const precioTool = new DynamicStructuredTool({
       // Si es una respuesta corta que necesita contexto, inferir el producto del historial
       let productoModificado = producto;
       
-      // Usar el historialChat pasado por el agente o obtener del almacenamiento directo
-      const historialCompleto = historialChat || (telefono ? getHistoryForContext(telefono) : []);
+      // Obtener historial directamente del almacenamiento usando el teléfono
+      const historialCompleto = telefono ? getHistoryForContext(telefono) : [];
       console.log(`🔍 Procesando mensaje: "${producto}" para teléfono ${telefono} con historial de ${historialCompleto.length} mensajes`);
       
       // Debug detallado: mostrar el historial completo
@@ -407,9 +406,6 @@ const precioTool = new DynamicStructuredTool({
         console.log(`🔍 Contenido completo del historial:`, JSON.stringify(historialCompleto, null, 2));
       } else {
         console.log(`🔍 Historial vacío para teléfono ${telefono}.`);
-        if (historialChat) {
-          console.log(`🔍 Pero historialChat fue proporcionado con ${historialChat.length} elementos`);
-        }
       }
       
       if (esRespuestaCortaNecesitaContexto(producto, historialCompleto)) {

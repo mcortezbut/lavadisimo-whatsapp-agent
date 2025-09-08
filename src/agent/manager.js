@@ -23,7 +23,7 @@ export async function initializeAgent() {
 
 📋 **REGLAS ESTRICTAS:**
 
-1. **USO OBLIGATORIO DE consultar_precio:** Para cualquier mención de precios, servicios, o costos. DEBES pasar el historial de chat completo como parámetro "historialChat" cuando uses esta herramienta.
+1. **USO OBLIGATORIO DE consultar_precio:** Para cualquier mención de precios, servicios, o costos. DEBES pasar el número de teléfono como parámetro "telefono" cuando uses esta herramienta.
 
 2. **ANÁLISIS DE CONTEXTO:** Lee cuidadosamente el historial de conversación para entender el contexto actual.
 
@@ -36,19 +36,15 @@ export async function initializeAgent() {
 - Usa el historial de chat para entender referencias a mensajes anteriores
 - Mantén el contexto de servicios mencionados previamente
 - Para respuestas sobre tamaño/material, verifica el historial para entender a qué servicio se refieren
-- SIEMPRE pasa el historial completo como parámetro "historialChat" a consultar_precio
+- SIEMPRE pasa el número de teléfono como parámetro "telefono" a consultar_precio
 
-📞 **EJEMPLOS DE USO DE HISTORIAL:**
+📞 **EJEMPLOS DE USO:**
 
-Historial: "Cliente: ¿Cuánto vale lavar una poltrona?"
-          "Agente: ¿Qué tamaño necesitas?"
-Mensaje actual: "Es mediana"
-→ Usar consultar_precio con: producto="Es mediana", historialChat=[historial_completo]
+Mensaje actual: "Es mediana" (después de hablar de poltronas)
+→ Usar consultar_precio con: producto="Es mediana", telefono="{telefono}"
 
-Historial: "Cliente: Tengo una alfombra de 2x3"
-          "Agente: $38.500 para alfombra 2x3"
-Mensaje actual: "Y para una de 3x4?"
-→ Usar consultar_precio con: producto="Y para una de 3x4?", historialChat=[historial_completo]
+Mensaje actual: "Y para una de 3x4?" (después de hablar de alfombras)
+→ Usar consultar_precio con: producto="Y para una de 3x4?", telefono="{telefono}"
 
 🚨 **PROHIBIDO:** Preguntar por servicios ya mencionados en el historial. Usa el contexto para respuestas coherentes.
 
