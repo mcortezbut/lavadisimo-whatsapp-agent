@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { DataSource } from "typeorm";
 import { DynamicStructuredTool } from "@langchain/core/tools";
-import { getHistoryForContext } from "../memory.js";
+import { getHistoryForContext, conversationHistories } from "../memory.js";
 
 // Schema Zod para validación
 const paramsSchema = z.object({
@@ -398,15 +398,18 @@ const precioTool = new DynamicStructuredTool({
       // Si es una respuesta corta que necesita contexto, inferir el producto del historial
       let productoModificado = producto;
       
-      // Obtener historial directamente del almacenamiento usando el teléfono
-      const historialCompleto = telefono ? getHistoryForContext(telefono) : [];
-      console.log(`🔍 Procesando mensaje: "${producto}" con historial de ${historialCompleto.length} mensajes`);
+      // Usar el historialChat pasado por el agente o obtener del almacenamiento directo
+      const historialCompleto = historialChat || (telefono ? getHistoryForContext(telefono) : []);
+      console.log(`🔍 Procesando mensaje: "${producto}" para teléfono ${telefono} con historial de ${historialCompleto.length} mensajes`);
       
-      // Debug: mostrar contenido del historial completo
+      // Debug detallado: mostrar el historial completo
       if (historialCompleto.length > 0) {
         console.log(`🔍 Contenido completo del historial:`, JSON.stringify(historialCompleto, null, 2));
       } else {
-        console.log(`🔍 Historial vacío o teléfono no proporcionado`);
+        console.log(`🔍 Historial vacío para teléfono ${telefono}.`);
+        if (historialChat) {
+          console.log(`🔍 Pero historialChat fue proporcionado con ${historialChat.length} elementos`);
+        }
       }
       
       if (esRespuestaCortaNecesitaContexto(producto, historialCompleto)) {
