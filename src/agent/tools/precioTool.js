@@ -368,6 +368,21 @@ export function expandirBusqueda(termino) {
   return [...new Set(terminosExpandidos)].filter(t => t && t.trim());
 }
 
+// Función para construir respuesta con opciones de selección
+function construirRespuestaOpciones(base, variantes) {
+  let respuesta = `Encontré varias opciones para ${base}. ¿A cuál te refieres?\n\n`;
+  
+  // Limitar a 10 opciones máximo para no abrumar al usuario
+  const variantesLimitadas = variantes.slice(0, 10);
+  
+  variantesLimitadas.forEach((variante, index) => {
+    respuesta += `${index + 1}. ${variante}\n`;
+  });
+  
+  respuesta += `\nPor favor, especifica el número correspondiente o describe mejor qué necesitas.`;
+  return respuesta;
+}
+
 // Crear la herramienta usando DynamicStructuredTool
 const precioTool = new DynamicStructuredTool({
   name: "consultar_precio",
@@ -415,17 +430,31 @@ const precioTool = new DynamicStructuredTool({
               `pt.NOMPROD LIKE '%' + @${index + terminosContexto.length} + '%'`
             ).join(' OR ');
             
-            // Buscar productos que coincidan con cualquier término de contexto Y cualquier término de tamaño
+            // Búsqueda más específica: productos que contengan tanto contexto como tamaño
+            const condicionesEspecificas = terminosContexto.map((_, index) => 
+              `pt.NOMPROD LIKE '%' + @${index} + '%'`
+            ).join(' OR ');
+            
+            const condicionesTamañoEspecificas = terminosTamaño.map((_, index) => 
+              `pt.NOMPROD LIKE '%' + @${index + terminosContexto.length} + '%'`
+            ).join(' OR ');
+            
             const parametrosBusqueda = [...terminosContexto, ...terminosTamaño];
             const productosEspecificos = await datasource.query(`
-              SELECT TOP 5 pt.NOMPROD, pt.PRECIO
+              SELECT TOP 10 pt.NOMPROD, pt.PRECIO
               FROM PRODUCTOS pt
               INNER JOIN (SELECT idprod, MAX(fechaupdate) AS maxdate FROM productos WHERE idusuario = 'lavadisimo' GROUP BY idprod) mt
               ON pt.FECHAUPDATE = mt.maxdate AND pt.IDPROD = mt.IDPROD
               WHERE pt.NULO = 0 AND pt.IDUSUARIO = 'lavadisimo'
-                AND (${condicionesContexto})
-                AND (${condicionesTamaño})
-              ORDER BY pt.FECHAUPDATE DESC
+                AND (${condicionesEspecificas})
+                AND (${condicionesTamañoEspecificas})
+              ORDER BY 
+                CASE 
+                  WHEN pt.NOMPROD LIKE '%${contexto}%${tamaño}%' THEN 1
+                  WHEN pt.NOMPROD LIKE '%${contexto}%' AND pt.NOMPROD LIKE '%${tamaño}%' THEN 2
+                  ELSE 3
+                END,
+                pt.FECHAUPDATE DESC
             `, parametrosBusqueda);
             
             // Debug: log los productos encontrados
@@ -438,25 +467,26 @@ const precioTool = new DynamicStructuredTool({
               const prod = productosEspecificos[0];
               return `${prod.NOMPROD}: $${parseInt(prod.PRECIO).toLocaleString('es-CL')}`;
             } else {
-              // Si hay múltiples, extraer variantes y preguntar
-              const { base, variantes } = extraerVariantes(productosEspecificos.map(p => p.NOMPROD));
-              console.log(`🔍 Variantes extraídas: base=${base}, variantes=${JSON.stringify(variantes)}`);
+              // Filtrar solo productos que realmente son del contexto (poltrona) para evitar mostrar productos no relacionados
+              const productosFiltrados = productosEspecificos.filter(prod => 
+                prod.NOMPROD.toLowerCase().includes(contexto.toLowerCase())
+              );
               
-              // Si solo hay una variante significativa, devolver directamente el precio
-              if (variantes.length === 1) {
-                const prod = productosEspecificos[0];
+              if (productosFiltrados.length === 0) {
+                // Si no hay productos del contexto específico, usar todos los encontrados
+                const { base, variantes } = extraerVariantes(productosEspecificos.map(p => p.NOMPROD));
+                console.log(`🔍 Variantes extraídas: base=${base}, variantes=${JSON.stringify(variantes)}`);
+                
+                return construirRespuestaOpciones(base || contexto, variantes);
+              } else if (productosFiltrados.length === 1) {
+                const prod = productosFiltrados[0];
                 return `${prod.NOMPROD}: $${parseInt(prod.PRECIO).toLocaleString('es-CL')}`;
-              } else if (variantes.length > 0) {
-                let respuesta = `Encontré varias opciones para ${base || contexto}. ¿A cuál te refieres?\n\n`;
-                variantes.forEach((variante, index) => {
-                  respuesta += `${index + 1}. ${variante}\n`;
-                });
-                respuesta += `\nPor favor, especifica cuál necesitas.`;
-                return respuesta;
               } else {
-                // Fallback si no se pueden extraer variantes - devolver el primero
-                const prod = productosEspecificos[0];
-                return `${prod.NOMPROD}: $${parseInt(prod.PRECIO).toLocaleString('es-CL')}`;
+                // Extraer variantes solo de productos filtrados del contexto correcto
+                const { base, variantes } = extraerVariantes(productosFiltrados.map(p => p.NOMPROD));
+                console.log(`🔍 Variantes extraídas (filtradas): base=${base}, variantes=${JSON.stringify(variantes)}`);
+                
+                return construirRespuestaOpciones(base || contexto, variantes);
               }
             }
           } else {
