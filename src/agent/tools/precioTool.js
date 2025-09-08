@@ -264,19 +264,33 @@ function extraerContextoDelHistorial(historialChat) {
   return null;
 }
 
+// Función para detectar si el texto contiene dimensiones específicas
+function contieneDimensiones(texto) {
+  // Patrón mejorado para detectar dimensiones con números
+  const patronDimensiones = /\d+(?:[.,]\d+)?\s*[xX×por]\s*\d+(?:[.,]\d+)?/i;
+  return patronDimensiones.test(texto);
+}
+
 // Función para detectar si es una respuesta corta que necesita contexto
 function esRespuestaCortaNecesitaContexto(texto, historialChat) {
   const textoLimpio = texto.toLowerCase().trim();
   
-  // Palabras que indican respuestas cortas a preguntas previas
+  // Si el texto contiene dimensiones, no es una respuesta corta
+  if (contieneDimensiones(textoLimpio)) {
+    return false;
+  }
+  
+  // Palabras que indican respuestas cortas a preguntas previas (solo palabras completas)
   const indicadoresRespuestaCorta = [
     'es', 'es una', 'es un', 'la', 'el', 'una', 'un', 
     'mediana', 'pequeña', 'grande', 'xl', 'l', 'm', 's'
   ];
   
-  const esRespuestaCorta = indicadoresRespuestaCorta.some(indicator => 
-    textoLimpio === indicator || textoLimpio.startsWith(indicator + ' ')
-  );
+  // Usar regex con word boundaries para evitar coincidencias dentro de palabras
+  const esRespuestaCorta = indicadoresRespuestaCorta.some(indicator => {
+    const regex = new RegExp(`\\b${indicator}\\b`, 'i');
+    return regex.test(textoLimpio) && textoLimpio.split(/\s+/).length <= 3;
+  });
   
   if (!esRespuestaCorta) return false;
   
@@ -394,9 +408,6 @@ const precioTool = new DynamicStructuredTool({
         await datasource.initialize();
       }
 
-      // Si es una respuesta corta que necesita contexto, inferir el producto del historial
-      let productoModificado = producto;
-      
       // Obtener historial directamente del almacenamiento usando el teléfono
       const historialCompleto = telefono ? getHistoryForContext(telefono) : [];
       console.log(`🔍 Procesando mensaje: "${producto}" para teléfono ${telefono} con historial de ${historialCompleto.length} mensajes`);
@@ -408,7 +419,12 @@ const precioTool = new DynamicStructuredTool({
         console.log(`🔍 Historial vacío para teléfono ${telefono}.`);
       }
       
-      if (esRespuestaCortaNecesitaContexto(producto, historialCompleto)) {
+      let productoModificado = producto;
+      
+      // Si el mensaje contiene dimensiones, NO usar contexto - priorizar búsqueda por medidas
+      if (contieneDimensiones(producto)) {
+        console.log(`🔍 Mensaje contiene dimensiones, priorizando búsqueda por medidas sobre contexto`);
+      } else if (esRespuestaCortaNecesitaContexto(producto, historialCompleto)) {
         const contexto = extraerContextoDelHistorial(historialCompleto);
         console.log(`🔍 Contexto extraído del historial: ${contexto}`);
         
