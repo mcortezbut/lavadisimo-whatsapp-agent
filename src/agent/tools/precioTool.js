@@ -11,7 +11,7 @@ const paramsSchema = z.object({
 
 const datasource = new DataSource({
   type: "mssql",
-  server: process.env.DB_HOST,
+  host: process.env.DB_HOST,
   port: process.env.DB_PORT ? parseInt(process.env.DB_PORT) : undefined,
   username: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
