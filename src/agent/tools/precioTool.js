@@ -228,8 +228,8 @@ function extraerMedidasDeFrase(texto) {
 }
 
 // Función para extraer el contexto del historial de chat
-function extraerContextoDelHistorial(historialChat = []) {
-  if (!historialChat || historialChat.length === 0) return null;
+function extraerContextoDelHistorial(historialChat) {
+  if (!historialChat || !Array.isArray(historialChat) || historialChat.length === 0) return null;
   
   // Buscar en el historial las últimas menciones de productos
   const productosClave = ['poltrona', 'alfombra', 'cortina', 'chaqueta', 'pantalon', 'blusa', 'cobertor'];
@@ -252,7 +252,7 @@ function extraerContextoDelHistorial(historialChat = []) {
 }
 
 // Función para detectar si es una respuesta corta que necesita contexto
-function esRespuestaCortaNecesitaContexto(texto, historialChat = []) {
+function esRespuestaCortaNecesitaContexto(texto, historialChat) {
   const textoLimpio = texto.toLowerCase().trim();
   
   // Palabras que indican respuestas cortas a preguntas previas
@@ -368,7 +368,7 @@ const precioTool = new DynamicStructuredTool({
 
       // Si es una respuesta corta que necesita contexto, inferir el producto del historial
       let productoModificado = producto;
-      console.log(`🔍 Procesando mensaje: "${producto}" con historial:`, historialChat.length, 'mensajes');
+      console.log(`🔍 Procesando mensaje: "${producto}" con historial:`, historialChat ? historialChat.length : 0, 'mensajes');
       
       if (esRespuestaCortaNecesitaContexto(producto, historialChat)) {
         const contexto = extraerContextoDelHistorial(historialChat);
