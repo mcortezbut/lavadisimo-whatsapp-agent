@@ -398,9 +398,11 @@ const precioTool = new DynamicStructuredTool({
       let productoModificado = producto;
       console.log(`🔍 Procesando mensaje: "${producto}" con historial:`, historialChat ? historialChat.length : 0, 'mensajes');
       
-      // Debug: mostrar contenido del historial
+      // Debug: mostrar contenido del historial completo
       if (historialChat && Array.isArray(historialChat)) {
-        console.log(`🔍 Contenido del historial:`, JSON.stringify(historialChat.slice(-3), null, 2));
+        console.log(`🔍 Contenido completo del historial:`, JSON.stringify(historialChat, null, 2));
+      } else {
+        console.log(`🔍 HistorialChat no es un array o está vacío:`, historialChat);
       }
       
       if (esRespuestaCortaNecesitaContexto(producto, historialChat)) {
