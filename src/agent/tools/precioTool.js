@@ -237,7 +237,20 @@ function extraerContextoDelHistorial(historialChat) {
   // Recorrer el historial de más reciente a más antiguo
   for (let i = historialChat.length - 1; i >= 0; i--) {
     const mensaje = historialChat[i];
-    const contenido = typeof mensaje === 'object' ? mensaje.content : mensaje;
+    let contenido = mensaje;
+    
+    // Manejar diferentes formatos de mensaje
+    if (typeof mensaje === 'object') {
+      // LangChain BaseMessage format
+      if (mensaje.content) {
+        contenido = mensaje.content;
+      } else if (mensaje.lc_kwargs && mensaje.lc_kwargs.content) {
+        // Alternative LangChain format
+        contenido = mensaje.lc_kwargs.content;
+      } else {
+        continue; // Skip if we can't extract content
+      }
+    }
     
     if (typeof contenido === 'string') {
       for (const producto of productosClave) {
@@ -369,6 +382,11 @@ const precioTool = new DynamicStructuredTool({
       // Si es una respuesta corta que necesita contexto, inferir el producto del historial
       let productoModificado = producto;
       console.log(`🔍 Procesando mensaje: "${producto}" con historial:`, historialChat ? historialChat.length : 0, 'mensajes');
+      
+      // Debug: mostrar contenido del historial
+      if (historialChat && Array.isArray(historialChat)) {
+        console.log(`🔍 Contenido del historial:`, JSON.stringify(historialChat.slice(-3), null, 2));
+      }
       
       if (esRespuestaCortaNecesitaContexto(producto, historialChat)) {
         const contexto = extraerContextoDelHistorial(historialChat);
