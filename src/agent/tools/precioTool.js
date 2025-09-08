@@ -11,7 +11,7 @@ const paramsSchema = z.object({
 
 const datasource = new DataSource({
   type: "mssql",
-  host: process.env.DB_HOST,
+  server: process.env.DB_HOST,
   port: process.env.DB_PORT ? parseInt(process.env.DB_PORT) : undefined,
   username: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
@@ -368,8 +368,12 @@ const precioTool = new DynamicStructuredTool({
 
       // Si es una respuesta corta que necesita contexto, inferir el producto del historial
       let productoModificado = producto;
+      console.log(`🔍 Procesando mensaje: "${producto}" con historial:`, historialChat.length, 'mensajes');
+      
       if (esRespuestaCortaNecesitaContexto(producto, historialChat)) {
         const contexto = extraerContextoDelHistorial(historialChat);
+        console.log(`🔍 Contexto extraído del historial: ${contexto}`);
+        
         if (contexto) {
           // Extraer palabras de tamaño del producto actual
           const palabrasTamaño = producto.match(/(mediana|pequeña|grande|xl|l|m|s|especial)/i);
@@ -381,6 +385,9 @@ const precioTool = new DynamicStructuredTool({
             // Expandir términos de contexto y tamaño para incluir sinónimos
             const terminosContexto = expandirBusqueda(contexto);
             const terminosTamaño = expandirBusqueda(tamaño);
+            
+            console.log(`🔍 Términos expandidos - contexto: ${JSON.stringify(terminosContexto)}`);
+            console.log(`🔍 Términos expandidos - tamaño: ${JSON.stringify(terminosTamaño)}`);
             
             const condicionesContexto = terminosContexto.map((_, index) => 
               `pt.NOMPROD LIKE '%' + @${index} + '%'`
@@ -416,7 +423,12 @@ const precioTool = new DynamicStructuredTool({
               // Si hay múltiples, extraer variantes y preguntar
               const { base, variantes } = extraerVariantes(productosEspecificos.map(p => p.NOMPROD));
               console.log(`🔍 Variantes extraídas: base=${base}, variantes=${JSON.stringify(variantes)}`);
-              if (variantes.length > 0) {
+              
+              // Si solo hay una variante significativa, devolver directamente el precio
+              if (variantes.length === 1) {
+                const prod = productosEspecificos[0];
+                return `${prod.NOMPROD}: $${parseInt(prod.PRECIO).toLocaleString('es-CL')}`;
+              } else if (variantes.length > 0) {
                 let respuesta = `Encontré varias opciones para ${base || contexto}. ¿A cuál te refieres?\n\n`;
                 variantes.forEach((variante, index) => {
                   respuesta += `${index + 1}. ${variante}\n`;
@@ -424,8 +436,9 @@ const precioTool = new DynamicStructuredTool({
                 respuesta += `\nPor favor, especifica cuál necesitas.`;
                 return respuesta;
               } else {
-                // Fallback si no se pueden extraer variantes
-                return `Encontré varias opciones para "${contexto} ${tamaño}". Por favor, sé más específico sobre qué tipo necesitas.`;
+                // Fallback si no se pueden extraer variantes - devolver el primero
+                const prod = productosEspecificos[0];
+                return `${prod.NOMPROD}: $${parseInt(prod.PRECIO).toLocaleString('es-CL')}`;
               }
             }
           } else {
