@@ -11,9 +11,9 @@
       "trustServerCertificate": true
     }
   ],
-  "lavadisimo.dbHost": "tu-servidor.database.windows.net",
-  "lavadisimo.dbName": "lavadisimo_db",
-  "lavadisimo.dbUser": "tu_usuario",
+  "lavadisimo.dbHost": "200.63.96.20",
+  "lavadisimo.dbName": "lavadisimo",
+  "lavadisimo.dbUser": "lavadisimo",
   "files.associations": {
     "*.sql": "sql"
   },

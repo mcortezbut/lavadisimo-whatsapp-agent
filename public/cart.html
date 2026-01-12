@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Carrito de Servicios - Lavadísimo</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Navegación -->
+    <nav class="navbar">
+        <div class="container">
+            <a href="index.html" class="logo">
+                <i class="fas fa-soap"></i>
+                <span>Lavadísimo</span>
+            </a>
+            <div class="nav-links">
+                <a href="index.html"><i class="fas fa-home"></i> Inicio</a>
+                <a href="services.html"><i class="fas fa-concierge-bell"></i> Servicios</a>
+                <a href="cart.html" class="active"><i class="fas fa-shopping-cart"></i> Carrito <span id="cart-count" class="cart-count">0</span></a>
+                <a href="booking.html"><i class="fas fa-calendar-check"></i> Agendar</a>
+                <a href="seguimiento.html"><i class="fas fa-clipboard-list"></i> Seguimiento</a>
+                <a href="#" id="loginBtn"><i class="fas fa-user"></i> Mi Cuenta</a>
+            </div>
+            <button class="menu-toggle">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Header de Página -->
+    <header class="page-header">
+        <div class="container">
+            <h1>Carrito de Servicios</h1>
+            <p>Revisa y organiza los servicios seleccionados por área de procesamiento.</p>
+        </div>
+    </header>
+
+    <!-- Contenido del Carrito -->
+    <section class="cart-section">
+        <div class="container">
+            <!-- Carrito Vacío -->
+            <div id="empty-cart" class="empty-cart">
+                <div class="empty-icon">
+                    <i class="fas fa-shopping-cart"></i>
+                </div>
+                <h3>Tu carrito está vacío</h3>
+                <p>Agrega servicios desde la página de servicios para comenzar.</p>
+                <a href="services.html" class="btn btn-primary">Explorar Servicios</a>
+            </div>
+
+            <!-- Carrito con Items -->
+            <div id="cart-content" class="cart-content" style="display: none;">
+                <!-- Resumen del Pedido -->
+                <div class="order-summary">
+                    <h2><i class="fas fa-receipt"></i> Resumen del Pedido</h2>
+                    <div class="summary-card">
+                        <div class="summary-row">
+                            <span>Total de Servicios:</span>
+                            <span id="total-services">0</span>
+                        </div>
+                        <div class="summary-row">
+                            <span>Subtotal:</span>
+                            <span id="subtotal">$0</span>
+                        </div>
+                        <div class="summary-row">
+                            <span>Costo de Transporte:</span>
+                            <span id="shipping-cost">$0</span>
+                        </div>
+                        <div class="summary-row total">
+                            <span>Total a Pagar:</span>
+                            <span id="total-price">$0</span>
+                        </div>
+                        <div class="summary-actions">
+                            <button id="checkout-btn" class="btn btn-primary btn-large">
+                                <i class="fas fa-credit-card"></i> Proceder al Pago
+                            </button>
+                            <button id="continue-shopping" class="btn btn-secondary">
+                                <i class="fas fa-plus"></i> Agregar Más Servicios
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Servicios por Área -->
+                <div class="cart-areas">
+                    <!-- Área 1: Lavandería y Tintorería -->
+                    <div class="cart-area" id="area-lavanderia-cart">
+                        <div class="area-header">
+                            <h3><i class="fas fa-tshirt"></i> Área: Lavandería y Tintorería</h3>
+                            <span class="area-status">Procesamiento separado</span>
+                        </div>
+                        <div class="area-items" id="lavanderia-items">
+                            <!-- Items se agregarán dinámicamente -->
+                        </div>
+                    </div>
+
+                    <!-- Área 2: Alfombras -->
+                    <div class="cart-area" id="area-alfombras-cart">
+                        <div class="area-header">
+                            <h3><i class="fas fa-couch"></i> Área: Alfombras</h3>
+                            <span class="area-status">Procesamiento separado</span>
+                        </div>
+                        <div class="area-items" id="alfombras-items">
+                            <!-- Items se agregarán dinámicamente -->
+                        </div>
+                    </div>
+
+                    <!-- Área 3: Pisos -->
+                    <div class="cart-area" id="area-pisos-cart">
+                        <div class="area-header">
+                            <h3><i class="fas fa-home"></i> Área: Pisos</h3>
+                            <span class="area-status">Procesamiento separado</span>
+                        </div>
+                        <div class="area-items" id="pisos-items">
+                            <!-- Items se agregarán dinámicamente -->
+                        </div>
+                    </div>
+
+                    <!-- Área 4: Tapices -->
+                    <div class="cart-area" id="area-tapices-cart">
+                        <div class="area-header">
+                            <h3><i class="fas fa-couch"></i> Área: Tapices</h3>
+                            <span class="area-status">Procesamiento separado</span>
+                        </div>
+                        <div class="area-items" id="tapices-items">
+                            <!-- Items se agregarán dinámicamente -->
+                        </div>
+                    </div>
+
+                    <!-- Área 5: Vehículos -->
+                    <div class="cart-area" id="area-vehiculos-cart">
+                        <div class="area-header">
+                            <h3><i class="fas fa-car"></i> Área: Vehículos</h3>
+                            <span class="area-status">Procesamiento separado</span>
+                        </div>
+                        <div class="area-items" id="vehiculos-items">
+                            <!-- Items se agregarán dinámicamente -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Instrucciones Especiales -->
+                <div class="special-instructions">
+                    <h3><i class="fas fa-sticky-note"></i> Instrucciones Especiales por Área</h3>
+                    <div class="instructions-grid">
+                        <div class="instruction-card">
+                            <h4>Lavandería y Tintorería</h4>
+                            <textarea id="instructions-lavanderia" placeholder="Ej: Lavar con agua fría, planchar con vapor..."></textarea>
+                        </div>
+                        <div class="instruction-card">
+                            <h4>Alfombras</h4>
+                            <textarea id="instructions-alfombras" placeholder="Ej: Mancha de vino tinto, área específica..."></textarea>
+                        </div>
+                        <div class="instruction-card">
+                            <h4>Pisos</h4>
+                            <textarea id="instructions-pisos" placeholder="Ej: Tipo de piso, productos a evitar..."></textarea>
+                        </div>
+                        <div class="instruction-card">
+                            <h4>Tapices</h4>
+                            <textarea id="instructions-tapices" placeholder="Ej: Tipo de tela, manchas específicas..."></textarea>
+                        </div>
+                        <div class="instruction-card">
+                            <h4>Vehículos</h4>
+                            <textarea id="instructions-vehiculos" placeholder="Ej: Modelo de vehículo, áreas específicas..."></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-col">
+                    <a href="index.html" class="logo">
+                        <i class="fas fa-soap"></i>
+                        <span>Lavadísimo</span>
+                    </a>
+                    <p>Servicios profesionales de limpieza para hogares y vehículos. Calidad, confianza y puntualidad.</p>
+                    <div class="social-links">
+                        <a href="#"><i class="fab fa-facebook"></i></a>
+                        <a href="#"><i class="fab fa-instagram"></i></a>
+                        <a href="#"><i class="fab fa-whatsapp"></i></a>
+                    </div>
+                </div>
+                <div class="footer-col">
+                    <h3>Áreas de Servicio</h3>
+                    <ul>
+                        <li><a href="services.html#area-lavanderia">Lavandería y Tintorería</a></li>
+                        <li><a href="services.html#area-alfombras">Alfombras</a></li>
+                        <li><a href="services.html#area-pisos">Pisos</a></li>
+                        <li><a href="services.html#area-tapices-vehiculos">Tapices y Vehículos</a></li>
+                    </ul>
+                </div>
+                <div class="footer-col">
+                    <h3>Enlaces Rápidos</h3>
+                    <ul>
+                        <li><a href="index.html">Inicio</a></li>
+                        <li><a href="services.html">Servicios</a></li>
+                        <li><a href="cart.html">Carrito</a></li>
+                        <li><a href="booking.html">Agendar</a></li>
+                        <li><a href="seguimiento.html">Seguimiento</a></li>
+                    </ul>
+                </div>
+                <div class="footer-col">
+                    <h3>Contacto</h3>
+                    <ul class="contact-info">
+                        <li><i class="fas fa-map-marker-alt"></i> Av. Principal 123, Santiago</li>
+                        <li><i class="fas fa-phone"></i> +56 9 1234 5678</li>
+                        <li><i class="fas fa-envelope"></i> info@lavadisimo.cl</li>
+                        <li><i class="fas fa-clock"></i> Lun-Vie: 8:00 - 20:00</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2025 Lavadísimo. Todos los derechos reservados.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Login Modal -->
+    <div id="loginModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2>Iniciar Sesión</h2>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="email">Correo Electrónico</label>
+                    <input type="email" id="email" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Contraseña</label>
+                    <input type="password" id="password" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Ingresar</button>
+                <p class="form-footer">¿No tienes cuenta? <a href="#" id="registerLink">Regístrate aquí</a></p>
+            </form>
+        </div>
+    </div>
+
+    <!-- Nuevo Register Modal con múltiples pasos -->
+    <div id="registerModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            
+            <!-- Paso 1: Solo teléfono -->
+            <div id="registerStep1" class="register-step active">
+                <h2>Registro - Paso 1</h2>
+                <p class="step-description">Ingresa tu número de WhatsApp con código de país para recibir un código de verificación.</p>
+                
+                <form id="registerStep1Form">
+                    <div class="form-group">
+                        <label for="reg-phone">Teléfono WhatsApp (con código de país)</label>
+                        <div class="input-with-example">
+                            <input type="tel" id="reg-phone" placeholder="+56 9 1234 5678" required>
+                            <small class="example-text">Ejemplo: +56 9 1234 5678 (Chile), +54 9 11 1234 5678 (Argentina)</small>
+                        </div>
+                        <small class="helper-text">Te enviaremos un código de 6 dígitos por WhatsApp para verificar tu número.</small>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Enviar Código de Verificación</button>
+                    <p class="form-footer">¿Ya tienes cuenta? <a href="#" id="loginLink">Inicia sesión aquí</a></p>
+                </form>
+            </div>
+
+            <!-- Paso 2: Verificación de código -->
+            <div id="registerStep2" class="register-step">
+                <h2>Registro - Paso 2</h2>
+                <p class="step-description">Ingresa el código de 6 dígitos que recibiste por WhatsApp.</p>
+                
+                <div class="verification-content">
+                    <div class="verification-icon">
+                        <i class="fab fa-whatsapp"></i>
+                    </div>
+                    <p>Hemos enviado un código de verificación a <span id="verification-phone-display"></span>.</p>
+                    
+                    <form id="registerStep2Form">
+                        <div class="form-group">
+                            <label for="verification-code">Código de Verificación</label>
+                            <input type="text" id="verification-code-register" maxlength="6" placeholder="000000" required>
+                            <small class="helper-text">El código es válido por 10 minutos.</small>
+                        </div>
+                        <div class="button-group">
+                            <button type="submit" class="btn btn-primary">Verificar y Continuar</button>
+                            <button type="button" id="resend-code-register" class="btn btn-secondary">Reenviar Código</button>
+                        </div>
+                        <p class="form-footer">
+                            <a href="#" id="back-to-step1">Volver a cambiar número</a>
+                        </p>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Paso 3: Completar registro con datos del cliente -->
+            <div id="registerStep3" class="register-step">
+                <h2>Registro - Paso 3</h2>
+                <p class="step-description">Completa tu información de registro. Algunos datos pueden estar prellenados desde nuestro sistema.</p>
+                
+                <form id="registerStep3Form">
+                    <div class="form-group">
+                        <label for="reg-name">Nombre Completo *</label>
+                        <input type="text" id="reg-name" required>
+                        <small class="helper-text">Este dato se obtendrá automáticamente si ya eres cliente.</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="reg-email">Correo Electrónico *</label>
+                        <input type="email" id="reg-email" required>
+                        <small class="helper-text">Será usado para notificaciones y recuperación de cuenta.</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="reg-address">Dirección *</label>
+                        <input type="text" id="reg-address" required>
+                        <small class="helper-text">Dirección para envíos y servicios a domicilio.</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="reg-region">Región *</label>
+                        <select id="reg-region" required>
+                            <option value="">Selecciona una región</option>
+                            <option value="Coquimbo" selected>Coquimbo</option>
+                            <!-- Otras regiones se agregarán cuando expandamos el negocio -->
+                        </select>
+                        <small class="helper-text">Actualmente solo operamos en la región de Coquimbo.</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="reg-password">Contraseña *</label>
+                        <input type="password" id="reg-password" required>
+                        <small class="helper-text">Mínimo 8 caracteres.</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="reg-confirm-password">Confirmar Contraseña *</label>
+                        <input type="password" id="reg-confirm-password" required>
+                    </div>
+                    
+                    <div class="button-group">
+                        <button type="submit" class="btn btn-primary">Completar Registro</button>
+                        <button type="button" id="back-to-step2" class="btn btn-secondary">Volver</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Paso 4: Registro completado -->
+            <div id="registerStep4" class="register-step">
+                <h2>¡Registro Completado!</h2>
+                <div class="success-icon">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <p class="success-message">Tu cuenta ha sido creada exitosamente.</p>
+                <p>Ahora puedes acceder a todos los servicios de Lavadísimo, hacer seguimiento de tus pedidos y recibir notificaciones por WhatsApp.</p>
+                <div class="button-group">
+                    <button id="go-to-login" class="btn btn-primary">Iniciar Sesión</button>
+                    <button id="close-register-modal" class="btn btn-secondary">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- WhatsApp Verification Modal -->
+    <div id="whatsappModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2>Verificación de WhatsApp</h2>
+            <div class="verification-content">
+                <div class="verification-icon">
+                    <i class="fab fa-whatsapp"></i>
+                </div>
+                <p>Hemos enviado un código de verificación a tu número de WhatsApp.</p>
+                <div class="form-group">
+                    <label for="verification-code">Código de Verificación</label>
+                    <input type="text" id="verification-code" maxlength="6" placeholder="000000">
+                </div>
+                <button id="verify-btn" class="btn btn-primary">Verificar</button>
+                <button id="resend-code" class="btn btn-secondary">Reenviar Código</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/app.js"></script>
+    <script src="js/cart.js"></script>
+</body>
+</html>

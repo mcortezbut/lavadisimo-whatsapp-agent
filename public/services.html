@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Servicios - Lavadísimo</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Navegación -->
+    <nav class="navbar">
+        <div class="container">
+            <a href="index.html" class="logo">
+                <i class="fas fa-soap"></i>
+                <span>Lavadísimo</span>
+            </a>
+            <div class="nav-links">
+                <a href="index.html"><i class="fas fa-home"></i> Inicio</a>
+                <a href="services.html" class="active"><i class="fas fa-concierge-bell"></i> Servicios</a>
+                <a href="cart.html"><i class="fas fa-shopping-cart"></i> Carrito <span id="cart-count" class="cart-count">0</span></a>
+                <a href="booking.html"><i class="fas fa-calendar-check"></i> Agendar</a>
+                <a href="seguimiento.html"><i class="fas fa-clipboard-list"></i> Seguimiento</a>
+                <a href="account.html"><i class="fas fa-user"></i> Mi Cuenta</a>
+            </div>
+            <button class="menu-toggle">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Header de Página -->
+    <header class="page-header">
+        <div class="container">
+            <h1>Nuestros Servicios</h1>
+            <p>Selecciona una categoría para ver los servicios disponibles y personalizar tu pedido.</p>
+        </div>
+    </header>
+
+    <!-- Categorías de Servicios -->
+    <section class="services-list">
+        <div class="container">
+            <div class="categories-grid">
+                <!-- Categoría 1: Ropa de Cama -->
+                <div class="category-card" data-category="ropa-cama">
+                    <div class="category-icon">
+                        <i class="fas fa-bed"></i>
+                    </div>
+                    <h3>Ropa de Cama</h3>
+                    <p>Sábanas, cubrecamas, edredones, almohadas. Lavado profesional con productos hipoalergénicos.</p>
+                    <button class="btn btn-primary select-category" data-category="ropa-cama">Seleccionar</button>
+                </div>
+                
+                <!-- Categoría 2: Telas y Vestuario -->
+                <div class="category-card" data-category="telas-vestuario">
+                    <div class="category-icon">
+                        <i class="fas fa-tshirt"></i>
+                    </div>
+                    <h3>Telas y Vestuario</h3>
+                    <p>Ropa diaria, prendas delicadas, uniformes. Tratamiento especial para manchas difíciles.</p>
+                    <button class="btn btn-primary select-category" data-category="telas-vestuario">Seleccionar</button>
+                </div>
+                
+                <!-- Categoría 3: Alfombras -->
+                <div class="category-card" data-category="alfombras">
+                    <div class="category-icon">
+                        <i class="fas fa-rug"></i>
+                    </div>
+                    <h3>Alfombras</h3>
+                    <p>Limpieza profunda de alfombras, tapetes y moquetas. Incluye desmanchado y protección.</p>
+                    <button class="btn btn-primary select-category" data-category="alfombras">Seleccionar</button>
+                </div>
+                
+                <!-- Categoría 4: Pisos -->
+                <div class="category-card" data-category="pisos">
+                    <div class="category-icon">
+                        <i class="fas fa-home"></i>
+                    </div>
+                    <h3>Pisos</h3>
+                    <p>Limpieza y tratamiento de pisos duros: cerámica, madera, flotante, porcelanato.</p>
+                    <button class="btn btn-primary select-category" data-category="pisos">Seleccionar</button>
+                </div>
+                
+                <!-- Categoría 5: Sofás y Sillas -->
+                <div class="category-card" data-category="sofas-sillas">
+                    <div class="category-icon">
+                        <i class="fas fa-chair"></i>
+                    </div>
+                    <h3>Sofás y Sillas</h3>
+                    <p>Limpieza profunda de sofás, sillones y poltronas. Incluye desmanchado.</p>
+                    <button class="btn btn-primary select-category" data-category="sofas-sillas">Seleccionar</button>
+                </div>
+                
+                <!-- Categoría 6: Colchones -->
+                <div class="category-card" data-category="colchones">
+                    <div class="category-icon">
+                        <i class="fas fa-bed"></i>
+                    </div>
+                    <h3>Colchones</h3>
+                    <p>Desinfección y limpieza profunda de colchones. Eliminación de ácaros y olores.</p>
+                    <button class="btn btn-primary select-category" data-category="colchones">Seleccionar</button>
+                </div>
+                
+                <!-- Categoría 7: Cortinas y Visillos -->
+                <div class="category-card" data-category="cortinas-visillos">
+                    <div class="category-icon">
+                        <i class="fas fa-window-maximize"></i>
+                    </div>
+                    <h3>Cortinas y Visillos</h3>
+                    <p>Lavado y planchado profesional de cortinas y visillos. Incluye instalación.</p>
+                    <button class="btn btn-primary select-category" data-category="cortinas-visillos">Seleccionar</button>
+                </div>
+                
+                <!-- Categoría 8: Vehículos -->
+                <div class="category-card" data-category="vehiculos">
+                    <div class="category-icon">
+                        <i class="fas fa-car"></i>
+                    </div>
+                    <h3>Vehículos</h3>
+                    <p>Lavado interior y exterior, aspirado, limpieza de tapicería y pulido de vidrios.</p>
+                    <button class="btn btn-primary select-category" data-category="vehiculos">Seleccionar</button>
+                </div>
+                
+                <!-- Categoría 9: Otros -->
+                <div class="category-card" data-category="otros">
+                    <div class="category-icon">
+                        <i class="fas fa-th-large"></i>
+                    </div>
+                    <h3>Otros</h3>
+                    <p>Cojines, almohadones, tapices decorativos, fundas de muebles y servicios especiales.</p>
+                    <button class="btn btn-primary select-category" data-category="otros">Seleccionar</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Modales para cada categoría -->
+    
+    <!-- Modal Alfombras -->
+    <div id="modal-alfombras" class="modal category-modal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2>Limpieza de Alfombras</h2>
+            <p class="modal-description">Ingresa las medidas de tu alfombra para calcular el servicio.</p>
+            
+            <form id="form-alfombras" class="category-form">
+                <div class="form-group">
+                    <label for="ancho-alfombra">Ancho (metros)</label>
+                    <input type="number" id="ancho-alfombra" min="0.5" max="10" step="0.1" required placeholder="Ej: 2.5">
+                </div>
+                
+                <div class="form-group">
+                    <label for="largo-alfombra">Largo (metros)</label>
+                    <input type="number" id="largo-alfombra" min="0.5" max="10" step="0.1" required placeholder="Ej: 3.0">
+                </div>
+                
+                <div class="form-group">
+                    <label for="cantidad-alfombra">Cantidad de alfombras</label>
+                    <input type="number" id="cantidad-alfombra" min="1" max="10" value="1" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="tipo-alfombra">Tipo de Alfombra</label>
+                    <select id="tipo-alfombra" required>
+                        <option value="">Selecciona tipo</option>
+                        <option value="estandar">Estándar (sintética)</option>
+                        <option value="lana">Lana natural</option>
+                        <option value="persa">Persa/Oriental</option>
+                        <option value="moqueta">Moqueta</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="nivel-suciedad">Nivel de Suciedad</label>
+                    <select id="nivel-suciedad" required>
+                        <option value="leve">Leve (mantenimiento)</option>
+                        <option value="moderado" selected>Moderado (uso normal)</option>
+                        <option value="alto">Alto (manchas visibles)</option>
+                        <option value="muy-alto">Muy alto (necesita desmanchado)</option>
+                    </select>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary close-form">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Agregar al Carrito</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Modal Vehículos -->
+    <div id="modal-vehiculos" class="modal category-modal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2>Limpieza de Vehículos</h2>
+            <p class="modal-description">Selecciona el tamaño de tu vehículo y el tipo de lavado.</p>
+            
+            <form id="form-vehiculos" class="category-form">
+                <div class="form-group">
+                    <label for="tamano-vehiculo">Tamaño del Vehículo</label>
+                    <select id="tamano-vehiculo" required>
+                        <option value="">Selecciona tamaño</option>
+                        <option value="city-car">City Car (auto pequeño)</option>
+                        <option value="suv-5">SUV capacidad 5</option>
+                        <option value="suv-7">SUV capacidad 7</option>
+                        <option value="pickup-estandar">Pick Up Estándar</option>
+                        <option value="pickup-xl">Pick Up XL</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="tipo-lavado">Tipo de Lavado</label>
+                    <select id="tipo-lavado" required>
+                        <option value="">Selecciona tipo de lavado</option>
+                        <option value="solo-interior">Solo interior (aspirado y limpieza de tapicería)</option>
+                        <option value="solo-exterior">Solo exterior (lavado y secado exterior)</option>
+                        <option value="completo" selected>Completo (interior y exterior)</option>
+                        <option value="premium">Premium (completo + tapices y techo)</option>
+                        <option value="super-premium">Super Premium (todo incluido + pulido)</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="cantidad-vehiculos">Cantidad de vehículos</label>
+                    <input type="number" id="cantidad-vehiculos" min="1" max="5" value="1" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="instrucciones-vehiculo">Instrucciones especiales (opcional)</label>
+                    <textarea id="instrucciones-vehiculo" rows="3" placeholder="Ej: Manchas específicas, material de tapicería, etc."></textarea>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary close-form">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Agregar al Carrito</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Modal Pisos -->
+    <div id="modal-pisos" class="modal category-modal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2>Limpieza de Pisos</h2>
+            <p class="modal-description">Especifica el tipo de piso y los metros cuadrados.</p>
+            
+            <form id="form-pisos" class="category-form">
+                <div class="form-group">
+                    <label for="tipo-piso">Tipo de Piso</label>
+                    <select id="tipo-piso" required>
+                        <option value="">Selecciona tipo de piso</option>
+                        <option value="ceramica">Cerámica</option>
+                        <option value="porcelanato">Porcelanato</option>
+                        <option value="madera">Madera natural</option>
+                        <option value="flotante">Piso flotante</option>
+                        <option value="vinilico">Vinílico</option>
+                        <option value="marmol">Mármol</option>
+                        <option value="otro">Otro</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="metros-pisos">Metros cuadrados (m²)</label>
+                    <input type="number" id="metros-pisos" min="1" max="500" step="0.5" required placeholder="Ej: 50">
+                </div>
+                
+                <div class="form-group">
+                    <label for="tratamiento-pisos">Tratamiento requerido</label>
+                    <select id="tratamiento-pisos" required>
+                        <option value="limpieza-basica">Limpieza básica</option>
+                        <option value="limpieza-profunda" selected>Limpieza profunda</option>
+                        <option value="pulido">Pulido y abrillantado</option>
+                        <option value="desinfeccion">Desinfección completa</option>
+                        <option value="tratamiento-madera">Tratamiento para madera</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="cantidad-ambientes">Cantidad de ambientes</label>
+                    <input type="number" id="cantidad-ambientes" min="1" max="20" value="1" required>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary close-form">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Agregar al Carrito</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Modal para categorías simples (sin formulario complejo) -->
+    <div id="modal-simple" class="modal category-modal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2 id="modal-simple-title">Servicio</h2>
+            <p class="modal-description" id="modal-simple-description">Selecciona las opciones para este servicio.</p>
+            
+            <form id="form-simple" class="category-form">
+                <div class="form-group">
+                    <label for="cantidad-simple">Cantidad</label>
+                    <input type="number" id="cantidad-simple" min="1" max="20" value="1" required>
+                </div>
+                
+                <div class="form-group" id="simple-extra-fields">
+                    <!-- Campos adicionales se insertarán aquí dinámicamente según la categoría -->
+                </div>
+                
+                <div class="form-group">
+                    <label for="instrucciones-simple">Instrucciones especiales (opcional)</label>
+                    <textarea id="instrucciones-simple" rows="3" placeholder="Detalles específicos para el servicio..."></textarea>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary close-form">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Agregar al Carrito</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-col">
+                    <a href="index.html" class="logo">
+                        <i class="fas fa-soap"></i>
+                        <span>Lavadísimo</span>
+                    </a>
+                    <p>Servicios profesionales de limpieza para hogares y vehículos. Calidad, confianza y puntualidad.</p>
+                    <div class="social-links">
+                        <a href="#"><i class="fab fa-facebook"></i></a>
+                        <a href="#"><i class="fab fa-instagram"></i></a>
+                        <a href="#"><i class="fab fa-whatsapp"></i></a>
+                    </div>
+                </div>
+                <div class="footer-col">
+                    <h3>Categorías</h3>
+                    <ul>
+                        <li><a href="#" data-category="ropa-cama">Ropa de Cama</a></li>
+                        <li><a href="#" data-category="telas-vestuario">Telas y Vestuario</a></li>
+                        <li><a href="#" data-category="alfombras">Alfombras</a></li>
+                        <li><a href="#" data-category="pisos">Pisos</a></li>
+                        <li><a href="#" data-category="sofas-sillas">Sofás y Sillas</a></li>
+                    </ul>
+                </div>
+                <div class="footer-col">
+                    <h3>Enlaces Rápidos</h3>
+                    <ul>
+                        <li><a href="index.html">Inicio</a></li>
+                        <li><a href="services.html">Servicios</a></li>
+                        <li><a href="cart.html">Carrito</a></li>
+                        <li><a href="booking.html">Agendar</a></li>
+                        <li><a href="seguimiento.html">Seguimiento</a></li>
+                    </ul>
+                </div>
+                <div class="footer-col">
+                    <h3>Contacto</h3>
+                    <ul class="contact-info">
+                        <li><i class="fas fa-map-marker-alt"></i> Av. Principal 123, Santiago</li>
+                        <li><i class="fas fa-phone"></i> +56 9 1234 5678</li>
+                        <li><i class="fas fa-envelope"></i> info@lavadisimo.cl</li>
+                        <li><i class="fas fa-clock"></i> Lun-Vie: 8:00 - 20:00</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2025 Lavadísimo. Todos los derechos reservados.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Login Modal -->
+    <div id="loginModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2>Iniciar Sesión</h2>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="email">Correo Electrónico</label>
+                    <input type="email" id="email" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Contraseña</label>
+                    <input type="password" id="password" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Ingresar</button>
+                <p class="form-footer">¿No tienes cuenta? <a href="#" id="registerLink">Regístrate aquí</a></p>
+            </form>
+        </div>
+    </div>
+
+    <script src="js/app.js"></script>
+    <script src="js/services-new.js"></script>
+</body>
+</html>

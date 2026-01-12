@@ -1,30 +1,18 @@
 {
-  "name": "lavadisimo-agent",
-  "type": "module",
+  "name": "lavadisimo-website",
   "version": "1.0.0",
-  "dependencies": {
-    "@langchain/openai": "^0.1.0",
-    "@langchain/core": "^0.1.0",
-    "langchain": "^0.1.18",
-    "express": "4.18.2",
-    "twilio": "4.23.0",
-    "typeorm": "0.3.25",
-    "mssql": "9.3.1",
-    "tedious": "15.1.2",
-    "reflect-metadata": "0.1.14",
-    "zod": "3.22.4",
-    "dotenv": "^16.0.0"
-  },
+  "description": "Sitio web para agendar servicios de limpieza",
+  "main": "index.js",
+  "type": "module",
   "scripts": {
     "start": "node src/server.js",
-    "test": "node scripts/test-agent.js",
-    "explore-db": "node scripts/explore-database.js",
-    "sample-context": "node scripts/generate-sample-context.js",
-    "fix-deps": "rm -rf node_modules package-lock.json && npm install --legacy-peer-deps",
-    "prod": "NODE_ENV=production node src/server.js"
+    "dev": "node --watch src/server.js"
   },
-  "engines": {
-    "node": "20.19.4",
-    "npm": "10.x"
+  "dependencies": {
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "mssql": "^9.3.2",
+    "twilio": "^5.11.2",
+    "typeorm": "^0.3.17"
   }
 }

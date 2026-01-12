@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seguimiento de Servicios - Lavadísimo</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Navegación -->
+    <nav class="navbar">
+        <div class="container">
+            <a href="index.html" class="logo">
+                <i class="fas fa-soap"></i>
+                <span>Lavadísimo</span>
+            </a>
+            <div class="nav-links">
+                <a href="index.html"><i class="fas fa-home"></i> Inicio</a>
+                <a href="services.html"><i class="fas fa-concierge-bell"></i> Servicios</a>
+                <a href="booking.html"><i class="fas fa-calendar-check"></i> Agendar</a>
+                <a href="seguimiento.html" class="active"><i class="fas fa-clipboard-list"></i> Seguimiento</a>
+                <a href="account.html"><i class="fas fa-user"></i> Mi Cuenta</a>
+            </div>
+            <button class="menu-toggle">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Header de Página -->
+    <header class="page-header">
+        <div class="container">
+            <h1>Seguimiento de Servicios</h1>
+            <p>Consulta el estado de tus servicios agendados y el historial de anteriores reservas.</p>
+        </div>
+    </header>
+
+    <!-- Sección de Consulta -->
+    <section class="status-query">
+        <div class="container">
+            <div class="query-form-container">
+                <h2>Consulta tu Reserva</h2>
+                <p class="section-subtitle">Ingresa tu número de reserva o correo electrónico para buscar</p>
+                
+                <div class="query-form">
+                    <div class="form-group">
+                        <label for="booking-number-input"><i class="fas fa-ticket-alt"></i> Número de Reserva</label>
+                        <input type="text" id="booking-number-input" placeholder="Ej: LD-2025-00123">
+                    </div>
+                    <div class="form-separator">
+                        <span>o</span>
+                    </div>
+                    <div class="form-group">
+                        <label for="email-input"><i class="fas fa-envelope"></i> Correo Electrónico</label>
+                        <input type="email" id="email-input" placeholder="tucorreo@ejemplo.com">
+                    </div>
+                    <button id="search-booking" class="btn btn-primary">
+                        <i class="fas fa-search"></i> Buscar Reserva
+                    </button>
+                </div>
+            </div>
+
+            <!-- Resultados de Búsqueda -->
+            <div id="search-results" class="search-results" style="display: none;">
+                <h3>Resultados de Búsqueda</h3>
+                <div class="booking-cards" id="booking-cards">
+                    <!-- Las tarjetas de reserva se cargarán aquí dinámicamente -->
+                </div>
+            </div>
+
+            <!-- Estado de Servicios -->
+            <div class="status-overview">
+                <h2>Mis Servicios</h2>
+                <p class="section-subtitle">Revisa el estado de tus servicios agendados</p>
+                
+                <div class="status-tabs">
+                    <button class="status-tab active" data-status="all">Todos</button>
+                    <button class="status-tab" data-status="pending">Pendientes</button>
+                    <button class="status-tab" data-status="confirmed">Confirmados</button>
+                    <button class="status-tab" data-status="in-progress">En Progreso</button>
+                    <button class="status-tab" data-status="completed">Completados</button>
+                    <button class="status-tab" data-status="cancelled">Cancelados</button>
+                </div>
+
+                <div class="status-cards-container">
+                    <!-- Tarjeta de ejemplo 1 -->
+                    <div class="status-card" data-status="confirmed">
+                        <div class="status-header">
+                            <div class="status-badge status-confirmed">
+                                <i class="fas fa-check-circle"></i>
+                                <span>Confirmado</span>
+                            </div>
+                            <span class="booking-number">LD-2025-00123</span>
+                        </div>
+                        <div class="status-content">
+                            <div class="service-info">
+                                <div class="service-icon">
+                                    <i class="fas fa-car"></i>
+                                </div>
+                                <div>
+                                    <h4>Limpieza de Vehículo</h4>
+                                    <p class="service-detail">Lavado completo interior y exterior</p>
+                                </div>
+                            </div>
+                            <div class="booking-details">
+                                <div class="detail">
+                                    <i class="fas fa-calendar-alt"></i>
+                                    <span>15 Enero 2025</span>
+                                </div>
+                                <div class="detail">
+                                    <i class="fas fa-clock"></i>
+                                    <span>10:00 AM</span>
+                                </div>
+                                <div class="detail">
+                                    <i class="fas fa-map-marker-alt"></i>
+                                    <span>Av. Principal 123, Santiago</span>
+                                </div>
+                                <div class="detail">
+                                    <i class="fas fa-credit-card"></i>
+                                    <span>Efectivo al recibir</span>
+                                </div>
+                            </div>
+                            <div class="status-timeline">
+                                <div class="timeline-step completed">
+                                    <div class="timeline-dot"></div>
+                                    <span>Reserva Creada</span>
+                                    <small>10 Ene, 14:30</small>
+                                </div>
+                                <div class="timeline-step completed">
+                                    <div class="timeline-dot"></div>
+                                    <span>Confirmada</span>
+                                    <small>10 Ene, 15:15</small>
+                                </div>
+                                <div class="timeline-step active">
+                                    <div class="timeline-dot"></div>
+                                    <span>Programada</span>
+                                    <small>15 Ene, 10:00</small>
+                                </div>
+                                <div class="timeline-step">
+                                    <div class="timeline-dot"></div>
+                                    <span>En Proceso</span>
+                                    <small>Por iniciar</small>
+                                </div>
+                                <div class="timeline-step">
+                                    <div class="timeline-dot"></div>
+                                    <span>Completado</span>
+                                    <small>Por completar</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="status-actions">
+                            <button class="btn btn-secondary btn-small">
+                                <i class="fas fa-print"></i> Imprimir
+                            </button>
+                            <button class="btn btn-secondary btn-small">
+                                <i class="fas fa-calendar-times"></i> Reagendar
+                            </button>
+                            <button class="btn btn-danger btn-small">
+                                <i class="fas fa-times"></i> Cancelar
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Tarjeta de ejemplo 2 -->
+                    <div class="status-card" data-status="in-progress">
+                        <div class="status-header">
+                            <div class="status-badge status-in-progress">
+                                <i class="fas fa-spinner"></i>
+                                <span>En Progreso</span>
+                            </div>
+                            <span class="booking-number">LD-2025-00122</span>
+                        </div>
+                        <div class="status-content">
+                            <div class="service-info">
+                                <div class="service-icon">
+                                    <i class="fas fa-couch"></i>
+                                </div>
+                                <div>
+                                    <h4>Limpieza de Alfombra</h4>
+                                    <p class="service-detail">Limpieza profunda (15 m²)</p>
+                                </div>
+                            </div>
+                            <div class="booking-details">
+                                <div class="detail">
+                                    <i class="fas fa-calendar-alt"></i>
+                                    <span>14 Enero 2025</span>
+                                </div>
+                                <div class="detail">
+                                    <i class="fas fa-clock"></i>
+                                    <span>2:30 PM</span>
+                                </div>
+                                <div class="detail">
+                                    <i class="fas fa-map-marker-alt"></i>
+                                    <span>Calle Secundaria 456, Santiago</span>
+                                </div>
+                                <div class="detail">
+                                    <i class="fas fa-credit-card"></i>
+                                    <span>Tarjeta de crédito</span>
+                                </div>
+                            </div>
+                            <div class="status-update">
+                                <div class="update-icon">
+                                    <i class="fas fa-user-check"></i>
+                                </div>
+                                <div class="update-content">
+                                    <h5>Técnico en camino</h5>
+                                    <p>El técnico Juan Pérez está en camino a tu domicilio. Llegada estimada: 15 minutos</p>
+                                    <small>Actualizado hace 5 minutos</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="status-actions">
+                            <button class="btn btn-primary btn-small">
+                                <i class="fas fa-phone"></i> Contactar
+                            </button>
+                            <button class="btn btn-secondary btn-small">
+                                <i class="fas fa-map"></i> Ver Ruta
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Tarjeta de ejemplo 3 -->
+                    <div class="status-card" data-status="completed">
+                        <div class="status-header">
+                            <div class="status-badge status-completed">
+                                <i class="fas fa-check-double"></i>
+                                <span>Completado</span>
+                            </div>
+                            <span class="booking-number">LD-2025-00121</span>
+                        </div>
+                        <div class="status-content">
+                            <div class="service-info">
+                                <div class="service-icon">
+                                    <i class="fas fa-tshirt"></i>
+                                </div>
+                                <div>
+                                    <h4>Lavandería Express</h4>
+                                    <p class="service-detail">8 kg - Servicio express</p>
+                                </div>
+                            </div>
+                            <div class="booking-details">
+                                <div class="detail">
+                                    <i class="fas fa-calendar-alt"></i>
+                                    <span>13 Enero 2025</span>
+                                </div>
+                                <div class="detail">
+                                    <i class="fas fa-clock"></i>
+                                    <span>11:00 AM</span>
+                                </div>
+                                <div class="detail">
+                                    <i class="fas fa-map-marker-alt"></i>
+                                    <span>Av. Principal 123, Santiago</span>
+                                </div>
+                                <div class="detail">
+                                    <i class="fas fa-credit-card"></i>
+                                    <span>Transferencia bancaria</span>
+                                </div>
+                            </div>
+                            <div class="service-rating">
+                                <div class="rating-header">
+                                    <h5>Califica el Servicio</h5>
+                                    <div class="stars">
+                                        <i class="fas fa-star"></i>
+                                        <i class="fas fa-star"></i>
+                                        <i class="fas fa-star"></i>
+                                        <i class="fas fa-star"></i>
+                                        <i class="fas fa-star"></i>
+                                    </div>
+                                </div>
+                                <div class="rating-comment">
+                                    <p>"Excelente servicio, ropa impecable y entrega puntual. ¡Muy recomendable!"</p>
+                                    <small>Calificado el 13 Ene, 2025</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="status-actions">
+                            <button class="btn btn-secondary btn-small">
+                                <i class="fas fa-redo"></i> Solicitar de Nuevo
+                            </button>
+                            <button class="btn btn-secondary btn-small">
+                                <i class="fas fa-file-invoice"></i> Ver Factura
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Tarjeta de ejemplo 4 -->
+                    <div class="status-card" data-status="pending">
+                        <div class="status-header">
+                            <div class="status-badge status-pending">
+                                <i class="fas fa-clock"></i>
+                                <span>Pendiente de Pago</span>
+                            </div>
+                            <span class="booking-number">LD-2025-00124</span>
+                        </div>
+                        <div class="status-content">
+                            <div class="service-info">
+                                <div class="service-icon">
+                                    <i class="fas fa-chair"></i>
+                                </div>
+                                <div>
+                                    <h4>Limpieza de Sofá</h4>
+                                    <p class="service-detail">Sofá 3 plazas</p>
+                                </div>
+                            </div>
+                            <div class="booking-details">
+                                <div class="detail">
+                                    <i class="fas fa-calendar-alt"></i>
+                                    <span>16 Enero 2025</span>
+                                </div>
+                                <div class="detail">
+                                    <i class="fas fa-clock"></i>
+                                    <span>9:00 AM</span>
+                                </div>
+                                <div class="detail">
+                                    <i class="fas fa-map-marker-alt"></i>
+                                    <span>Av. Principal 123, Santiago</span>
+                                </div>
+                                <div class="detail">
+                                    <i class="fas fa-credit-card"></i>
+                                    <span>Pendiente de pago</span>
+                                </div>
+                            </div>
+                            <div class="payment-reminder">
+                                <div class="reminder-icon">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                </div>
+                                <div class="reminder-content">
+                                    <h5>Pago Pendiente</h5>
+                                    <p>Para confirmar tu reserva, realiza el pago de <strong>$45.000</strong> antes del 15 de Enero.</p>
+                                    <div class="payment-options">
+                                        <button class="btn btn-primary btn-small">
+                                            <i class="fas fa-credit-card"></i> Pagar Ahora
+                                        </button>
+                                        <button class="btn btn-secondary btn-small">
+                                            <i class="fas fa-qrcode"></i> Ver QR
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="status-actions">
+                            <button class="btn btn-danger btn-small">
+                                <i class="fas fa-times"></i> Cancelar Reserva
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="empty-state" id="empty-state" style="display: none;">
+                    <div class="empty-icon">
+                        <i class="fas fa-clipboard-list"></i>
+                    </div>
+                    <h3>No hay servicios con este estado</h3>
+                    <p>No se encontraron servicios con el estado seleccionado.</p>
+                    <a href="booking.html" class="btn btn-primary">
+                        <i class="fas fa-calendar-plus"></i> Agendar Nuevo Servicio
+                    </a>
+                </div>
+            </div>
+
+            <!-- Historial -->
+            <div class="history-section">
+                <h2>Historial de Servicios</h2>
+                <p class="section-subtitle">Revisa tus servicios anteriores</p>
+                
+                <div class="history-table-container">
+                    <table class="history-table">
+                        <thead>
+                            <tr>
+                                <th>N° Reserva</th>
+                                <th>Servicio</th>
+                                <th>Fecha</th>
+                                <th>Estado</th>
+                                <th>Monto</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>LD-2025-00121</td>
+                                <td>Lavandería Express</td>
+                                <td>13 Ene 2025</td>
+                                <td><span class="status-badge-table completed">Completado</span></td>
+                                <td>$20.000</td>
+                                <td>
+                                    <button class="btn-icon" title="Ver detalles">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <button class="btn-icon" title="Descargar factura">
+                                        <i class="fas fa-download"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>LD-2024-00987</td>
+                                <td>Limpieza de Vehículo</td>
+                                <td>20 Dic 2024</td>
+                                <td><span class="status-badge-table completed">Completado</span></td>
+                                <td>$15.000</td>
+                                <td>
+                                    <button class="btn-icon" title="Ver detalles">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <button class="btn-icon" title="Descargar factura">
+                                        <i class="fas fa-download"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>LD-2024-00986</td>
+                                <td>Limpieza de Alfombra</td>
+                                <td>15 Dic 2024</td>
+                                <td><span class="status-badge-table completed">Completado</span></td>
+                                <td>$37.500</td>
+                                <td>
+                                    <button class="btn-icon" title="Ver detalles">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <button class="btn-icon" title="Descargar factura">
+                                        <i class="fas fa-download"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>LD-2024-00985</td>
+                                <td>Limpieza de Mueble</td>
+                                <td>10 Dic 2024</td>
+                                <td><span class="status-badge-table completed">Completado</span></td>
+                                <td>$25.000</td>
+                                <td>
+                                    <button class="btn-icon" title="Ver detalles">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <button class="btn-icon" title="Descargar factura">
+                                        <i class="fas fa-download"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>LD-2024-00984</td>
+                                <td>Lavandería Estándar</td>
+                                <td>5 Dic 2024</td>
+                                <td><span class="status-badge-table cancelled">Cancelado</span></td>
+                                <td>$15.000</td>
+                                <td>
+                                    <button class="btn-icon" title="Ver detalles">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="history-stats">
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>24</h3>
+                            <p>Servicios Completados</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>2</h3>
+                            <p>Servicios Pendientes</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-star"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>4.8</h3>
+                            <p>Calificación Promedio</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-money-bill-wave"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3>$450.000</h3>
+                            <p>Total Gastado</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-col">
+                    <a href="index.html" class="logo">
+                        <i class="fas fa-soap"></i>
+                        <span>Lavadísimo</span>
+                    </a>
+                    <p>Servicios profesionales de limpieza para hogares y vehículos. Calidad, confianza y puntualidad.</p>
+                    <div class="social-links">
+                        <a href="#"><i class="fab fa-facebook"></i></a>
+                        <a href="#"><i class="fab fa-instagram"></i></a>
+                        <a href="#"><i class="fab fa-whatsapp"></i></a>
+                    </div>
+                </div>
+                <div class="footer-col">
+                    <h3>Servicios</h3>
+                    <ul>
+                        <li><a href="services.html#vehiculos">Limpieza de Vehículos</a></li>
+                        <li><a href="services.html#alfombras">Limpieza de Alfombras</a></li>
+                        <li><a href="services.html#lavanderia">Lavandería</a></li>
+                        <li><a href="services.html#muebles">Limpieza de Muebles</a></li>
+                    </ul>
+                </div>
+                <div class="footer-col">
+                    <h3>Enlaces Rápidos</h3>
+                    <ul>
+                        <li><a href="index.html">Inicio</a></li>
+                        <li><a href="services.html">Servicios</a></li>
+                        <li><a href="booking.html">Agendar</a></li>
+                        <li><a href="seguimiento.html">Seguimiento</a></li>
+                    </ul>
+                </div>
+                <div class="footer-col">
+                    <h3>Contacto</h3>
+                    <ul class="contact-info">
+                        <li><i class="fas fa-map-marker-alt"></i> Av. Principal 123, Santiago</li>
+                        <li><i class="fas fa-phone"></i> +56 9 1234 5678</li>
+                        <li><i class="fas fa-envelope"></i> info@lavadisimo.cl</li>
+                        <li><i class="fas fa-clock"></i> Lun-Vie: 8:00 - 20:00</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2025 Lavadísimo. Todos los derechos reservados.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Login Modal -->
+    <div id="loginModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2>Iniciar Sesión</h2>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="email">Correo Electrónico</label>
+                    <input type="email" id="email" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Contraseña</label>
+                    <input type="password" id="password" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Ingresar</button>
+                <p class="form-footer">¿No tienes cuenta? <a href="#" id="registerLink">Regístrate aquí</a></p>
+            </form>
+        </div>
+    </div>
+
+    <script src="js/app.js"></script>
+    <script src="js/status.js"></script>
+</body>
+</html>
