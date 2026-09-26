@@ -11,7 +11,8 @@ import twilio from 'twilio';
 import {
   obtenerTerminalesMercadoPago,
   activarModoPDV,
-  obtenerPointSmart2Id
+  obtenerPointSmart2Id,
+  crearPagoPrueba
 } from './mercadopago.js';
 
 // Cargar variables de entorno
