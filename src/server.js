@@ -7,6 +7,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import databaseManager from './tools/databaseManager.js';
 import twilio from 'twilio';
+import { obtenerTerminalesMercadoPago } from './mercadopago.js';
 
 // Cargar variables de entorno
 dotenv.config();
@@ -19,6 +20,41 @@ app.use(express.json());
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 app.use(express.static(path.join(__dirname, '../public')));
+
+// ============================================
+// MERCADO PAGO - DIAGNÓSTICO DE TERMINALES
+// ============================================
+
+app.get('/api/mercadopago/terminales', async (req, res) => {
+  try {
+    const data = await obtenerTerminalesMercadoPago();
+
+    const terminales = data?.data?.terminals || [];
+
+    res.json({
+      success: true,
+      total: terminales.length,
+      terminales: terminales.map(terminal => ({
+        id: terminal.id,
+        pos_id: terminal.pos_id,
+        store_id: terminal.store_id,
+        external_pos_id: terminal.external_pos_id,
+        operating_mode: terminal.operating_mode
+      }))
+    });
+
+  } catch (error) {
+    console.error(
+      'Error consultando terminales de Mercado Pago:',
+      error.message
+    );
+
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
 
 // ============================================
 // API ENDPOINTS PARA EL SITIO WEB
