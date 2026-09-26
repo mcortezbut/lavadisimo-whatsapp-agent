@@ -7,7 +7,12 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import databaseManager from './tools/databaseManager.js';
 import twilio from 'twilio';
-import { obtenerTerminalesMercadoPago } from './mercadopago.js';
+
+import {
+  obtenerTerminalesMercadoPago,
+  activarModoPDV,
+  obtenerPointSmart2Id
+} from './mercadopago.js';
 
 // Cargar variables de entorno
 dotenv.config();
@@ -45,7 +50,72 @@ app.get('/api/mercadopago/terminales', async (req, res) => {
 
   } catch (error) {
     console.error(
-      'Error consultando terminales de Mercado Pago:',
+      'Error consultando terminales Mercado Pago:',
+      error.message
+    );
+
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
+// ============================================
+// MERCADO PAGO - ACTIVAR PDV
+// PROTEGIDO POR SECRET
+// ============================================
+
+app.post('/api/mercadopago/activar-pdv', async (req, res) => {
+  try {
+
+    const adminSecret = process.env.SMARTSHINE_MP_ADMIN_SECRET;
+
+    if (!adminSecret) {
+      console.error(
+        'Falta SMARTSHINE_MP_ADMIN_SECRET'
+      );
+
+      return res.status(500).json({
+        success: false,
+        message: 'Configuración de seguridad incompleta'
+      });
+    }
+
+    const providedSecret =
+      req.headers['x-smartshine-secret'];
+
+    if (
+      !providedSecret ||
+      providedSecret !== adminSecret
+    ) {
+      return res.status(401).json({
+        success: false,
+        message: 'No autorizado'
+      });
+    }
+
+    console.log('');
+    console.log('========================================');
+    console.log('⚠️ ACTIVACIÓN PDV MERCADO PAGO');
+    console.log('========================================');
+
+    const result = await activarModoPDV();
+
+    console.log('✅ Mercado Pago respondió correctamente');
+
+    res.json({
+      success: true,
+      message:
+        'Solicitud de activación PDV enviada a Mercado Pago',
+      terminal: obtenerPointSmart2Id(),
+      result
+    });
+
+  } catch (error) {
+
+    console.error(
+      '❌ Error activando modo PDV:',
       error.message
     );
 
