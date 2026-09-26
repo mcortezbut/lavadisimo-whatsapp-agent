@@ -128,6 +128,109 @@ app.post('/api/mercadopago/activar-pdv', async (req, res) => {
 });
 
 // ============================================
+// MERCADO PAGO - COBRO DE PRUEBA
+// ============================================
+
+app.post('/api/mercadopago/test-payment', async (req, res) => {
+  try {
+
+    // ----------------------------------------
+    // Verificar secreto administrativo
+    // ----------------------------------------
+
+    const adminSecret =
+      process.env.SMARTSHINE_MP_ADMIN_SECRET;
+
+    if (!adminSecret) {
+      console.error(
+        'Falta SMARTSHINE_MP_ADMIN_SECRET'
+      );
+
+      return res.status(500).json({
+        success: false,
+        message: 'Configuración de seguridad incompleta'
+      });
+    }
+
+    const providedSecret =
+      req.headers['x-smartshine-secret'];
+
+    if (
+      !providedSecret ||
+      providedSecret !== adminSecret
+    ) {
+      return res.status(401).json({
+        success: false,
+        message: 'No autorizado'
+      });
+    }
+
+    // ----------------------------------------
+    // Obtener monto
+    // ----------------------------------------
+
+    const monto = Number(req.body?.amount);
+
+    // ----------------------------------------
+    // Validación
+    // ----------------------------------------
+
+    if (!Number.isInteger(monto)) {
+      return res.status(400).json({
+        success: false,
+        message:
+          'El monto debe ser un número entero'
+      });
+    }
+
+    if (monto < 1 || monto > 1000) {
+      return res.status(400).json({
+        success: false,
+        message:
+          'El monto de prueba permitido es $1 a $1.000'
+      });
+    }
+
+    // ----------------------------------------
+    // Crear Order
+    // ----------------------------------------
+
+    const result =
+      await crearPagoPrueba(monto);
+
+    // ----------------------------------------
+    // Respuesta
+    // ----------------------------------------
+
+    res.status(201).json({
+      success: true,
+
+      message:
+        'Orden de pago creada. Revisa la Point Smart 2.',
+
+      terminal:
+        obtenerPointSmart2Id(),
+
+      monto,
+
+      order: result
+    });
+
+  } catch (error) {
+
+    console.error(
+      '❌ Error creando pago de prueba:',
+      error.message
+    );
+
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
+// ============================================
 // API ENDPOINTS PARA EL SITIO WEB
 // ============================================
 
