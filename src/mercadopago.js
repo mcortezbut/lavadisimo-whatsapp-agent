@@ -8,7 +8,7 @@ const MERCADO_PAGO_API = 'https://api.mercadopago.com';
 const POINT_SMART_2_ID = 'NEWLAND_N950__N950NCCB05342983';
 
 // --------------------------------------------
-// Validar configuración
+// Access Token
 // --------------------------------------------
 
 function obtenerAccessToken() {
@@ -72,9 +72,6 @@ export async function activarModoPDV() {
     ]
   };
 
-  console.log('⚠️ Solicitando cambio de terminal a PDV...');
-  console.log('Terminal:', POINT_SMART_2_ID);
-
   const response = await fetch(
     `${MERCADO_PAGO_API}/terminals/v1/setup`,
     {
@@ -88,11 +85,6 @@ export async function activarModoPDV() {
   );
 
   const data = await response.json();
-
-  console.log(
-    'Respuesta Mercado Pago:',
-    JSON.stringify(data)
-  );
 
   if (!response.ok) {
     throw new Error(
@@ -108,7 +100,102 @@ export async function activarModoPDV() {
 }
 
 // --------------------------------------------
-// ID de la terminal configurada
+// CREAR COBRO DE PRUEBA
+// --------------------------------------------
+
+export async function crearPagoPrueba(monto) {
+  const accessToken = obtenerAccessToken();
+
+  // Validación estricta para esta primera prueba
+  if (!Number.isInteger(monto)) {
+    throw new Error(
+      'El monto debe ser un número entero'
+    );
+  }
+
+  if (monto < 1 || monto > 1000) {
+    throw new Error(
+      'El monto de prueba debe estar entre $1 y $1.000'
+    );
+  }
+
+  // UUID único para evitar duplicación del cobro
+  const idempotencyKey = crypto.randomUUID();
+
+  const externalReference =
+    `SMARTSHINE_TEST_${Date.now()}`;
+
+  const body = {
+    type: 'point',
+
+    external_reference: externalReference,
+
+    expiration_time: 'PT10M',
+
+    transactions: {
+      payments: [
+        {
+          amount: String(monto)
+        }
+      ]
+    },
+
+    config: {
+      point: {
+        terminal_id: POINT_SMART_2_ID,
+        print_on_terminal: 'no_ticket'
+      }
+    },
+
+    description: 'Prueba SMARTSHINE Point'
+  };
+
+  console.log('');
+  console.log('========================================');
+  console.log('💳 CREANDO COBRO DE PRUEBA');
+  console.log('========================================');
+  console.log('Monto:', monto);
+  console.log('Terminal:', POINT_SMART_2_ID);
+  console.log('Referencia:', externalReference);
+  console.log('Idempotency Key:', idempotencyKey);
+
+  const response = await fetch(
+    `${MERCADO_PAGO_API}/v1/orders`,
+    {
+      method: 'POST',
+
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${accessToken}`,
+        'X-Idempotency-Key': idempotencyKey
+      },
+
+      body: JSON.stringify(body)
+    }
+  );
+
+  const data = await response.json();
+
+  console.log(
+    'Respuesta Mercado Pago:',
+    JSON.stringify(data)
+  );
+
+  if (!response.ok) {
+    throw new Error(
+      `Mercado Pago POST ${response.status}: ${
+        data.message ||
+        data.error ||
+        JSON.stringify(data)
+      }`
+    );
+  }
+
+  return data;
+}
+
+// --------------------------------------------
+// ID de Point Smart 2
 // --------------------------------------------
 
 export function obtenerPointSmart2Id() {
