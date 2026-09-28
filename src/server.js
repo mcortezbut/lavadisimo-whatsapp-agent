@@ -232,6 +232,138 @@ app.post('/api/mercadopago/test-payment', async (req, res) => {
 });
 
 // ============================================
+// SMARTSHINE - COBRO DESDE SISTEMA INTERNO
+// ============================================
+
+app.post('/api/mercadopago/cobrar', async (req, res) => {
+
+  try {
+
+    // ----------------------------------------
+    // Seguridad
+    // ----------------------------------------
+
+    const adminSecret =
+      process.env.SMARTSHINE_MP_ADMIN_SECRET;
+
+    if (!adminSecret) {
+
+      return res.status(500).json({
+        success: false,
+        message: 'Configuración de seguridad incompleta'
+      });
+
+    }
+
+    const providedSecret =
+      req.headers['x-smartshine-secret'];
+
+    if (
+      !providedSecret ||
+      providedSecret !== adminSecret
+    ) {
+
+      return res.status(401).json({
+        success: false,
+        message: 'No autorizado'
+      });
+
+    }
+
+    // ----------------------------------------
+    // Datos recibidos
+    // ----------------------------------------
+
+    const monto = Number(req.body?.amount);
+
+    const referencia =
+      req.body?.reference || null;
+
+    // ----------------------------------------
+    // Validación
+    // ----------------------------------------
+
+    if (!Number.isInteger(monto)) {
+
+      return res.status(400).json({
+        success: false,
+        message: 'El monto debe ser un número entero'
+      });
+
+    }
+
+    if (monto <= 0) {
+
+      return res.status(400).json({
+        success: false,
+        message: 'El monto debe ser mayor a $0'
+      });
+
+    }
+
+    // ----------------------------------------
+    // Crear cobro
+    // ----------------------------------------
+
+    const result =
+      await crearCobroSmartshine(
+        monto,
+        referencia
+      );
+
+    // ----------------------------------------
+    // Respuesta
+    // ----------------------------------------
+
+    res.status(201).json({
+
+      success: true,
+
+      message:
+        'Cobro enviado correctamente a la Point',
+
+      monto,
+
+      referencia,
+
+      terminal:
+        obtenerPointSmart2Id(),
+
+      order_id:
+        result.id || null,
+
+      status:
+        result.status || null,
+
+      external_reference:
+        result.external_reference || referencia,
+
+      order:
+        result
+
+    });
+
+  } catch (error) {
+
+    console.error(
+      '❌ Error creando cobro SMARTSHINE:',
+      error.message
+    );
+
+    res.status(500).json({
+
+      success: false,
+
+      message:
+        error.message
+
+    });
+
+  }
+
+});
+
+// ============================================
 // API ENDPOINTS PARA EL SITIO WEB
 // ============================================
 
