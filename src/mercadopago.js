@@ -194,6 +194,92 @@ export async function crearPagoPrueba(monto) {
   return data;
 }
 
+// ============================================
+// CREAR COBRO SMARTSHINE
+// ============================================
+
+export async function crearCobroSmartshine(monto, referencia = null) {
+  const accessToken = obtenerAccessToken();
+
+  if (!Number.isInteger(monto)) {
+    throw new Error('El monto debe ser un número entero');
+  }
+
+  if (monto < 1) {
+    throw new Error('El monto debe ser mayor a $0');
+  }
+
+  const idempotencyKey = crypto.randomUUID();
+
+  const externalReference =
+    referencia ||
+    `SMARTSHINE_MANUAL_${Date.now()}`;
+
+  const body = {
+    type: 'point',
+
+    external_reference: externalReference,
+
+    transactions: {
+      payments: [
+        {
+          amount: String(monto)
+        }
+      ]
+    },
+
+    config: {
+      point: {
+        terminal_id: POINT_SMART_2_ID,
+        print_on_terminal: 'no_ticket'
+      }
+    },
+
+    description: 'Cobro SMARTSHINE'
+  };
+
+  console.log('========================================');
+  console.log('💳 COBRO SMARTSHINE');
+  console.log('========================================');
+  console.log('Monto:', monto);
+  console.log('Referencia:', externalReference);
+  console.log('Terminal:', POINT_SMART_2_ID);
+
+  const response = await fetch(
+    `${MERCADO_PAGO_API}/v1/orders`,
+    {
+      method: 'POST',
+
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${accessToken}`,
+        'X-Idempotency-Key': idempotencyKey
+      },
+
+      body: JSON.stringify(body)
+    }
+  );
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    console.error(
+      'Mercado Pago:',
+      JSON.stringify(data)
+    );
+
+    throw new Error(
+      `Mercado Pago ${response.status}: ${
+        data.message ||
+        data.error ||
+        JSON.stringify(data)
+      }`
+    );
+  }
+
+  return data;
+}
+
 // --------------------------------------------
 // ID de Point Smart 2
 // --------------------------------------------
