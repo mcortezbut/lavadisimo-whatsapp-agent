@@ -12,7 +12,8 @@ import {
   obtenerTerminalesMercadoPago,
   activarModoPDV,
   obtenerPointSmart2Id,
-  crearPagoPrueba
+  crearPagoPrueba,
+  crearCobroSmartshine
 } from './mercadopago.js';
 
 // Cargar variables de entorno
